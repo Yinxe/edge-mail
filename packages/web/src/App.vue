@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { NMessageProvider } from 'naive-ui'
 </script>
 
 <template>
-  <router-view />
+  <NMessageProvider>
+    <router-view />
+  </NMessageProvider>
 </template>
