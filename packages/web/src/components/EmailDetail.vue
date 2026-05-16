@@ -1,10 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import DOMPurify from 'dompurify'
 import { NTag, NText, NDivider, NEmpty } from 'naive-ui'
 import type { EmailDetail } from '../store'
 
-defineProps<{
+const props = defineProps<{
   email: EmailDetail | null
 }>()
+
+const safeHtmlBody = computed(() =>
+  props.email?.html_body ? DOMPurify.sanitize(props.email.html_body) : ''
+)
 
 function formatFullDate(dateStr: string): string {
   return new Date(dateStr + 'Z').toLocaleString('zh-CN')
@@ -40,7 +46,7 @@ function formatFullDate(dateStr: string): string {
       <NDivider />
 
       <div class="prose max-w-none text-sm">
-        <div v-if="email.html_body" v-html="email.html_body" class="email-body" />
+        <div v-if="email.html_body" v-html="safeHtmlBody" class="email-body" />
         <pre v-else-if="email.text_body" class="whitespace-pre-wrap font-sans text-sm">{{ email.text_body }}</pre>
         <NText v-else depth="3">（无正文内容）</NText>
       </div>

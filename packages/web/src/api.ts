@@ -37,9 +37,10 @@ export async function fetchEmailDetail(id: number): Promise<EmailDetail> {
 }
 
 export async function toggleEmailRead(id: number, isRead: boolean): Promise<void> {
-  await fetch(`${BASE}/api/emails/${id}/read`, {
+  const res = await fetch(`${BASE}/api/emails/${id}/read`, {
     method: 'PUT',
     headers: authHeaders(),
     body: JSON.stringify({ is_read: isRead }),
   })
+  if (!res.ok) throw new Error('Failed to toggle read status')
 }

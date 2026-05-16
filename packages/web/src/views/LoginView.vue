@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { NInput, NButton, NCard, NMessageProvider, useMessage } from 'naive-ui'
+import { NInput, NButton, NCard, useMessage } from 'naive-ui'
 import { login } from '../api'
 import { token } from '../store'
 

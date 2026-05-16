@@ -16,7 +16,7 @@ export async function handleEmail(
   const rawBuffer = await new Response(message.raw as BodyInit).arrayBuffer();
   const parsed = await PostalMime.parse(rawBuffer);
 
-  const messageId = message.headers.get('message-id') || '';
+  const messageId = message.headers.get('message-id') || crypto.randomUUID();
   const sender = message.from;
   const recipient = message.to;
   const subject = parsed.subject || '(no subject)';

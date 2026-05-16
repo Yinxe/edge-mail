@@ -25,6 +25,7 @@ export interface Env {
   DB: D1Database;
   AUTH_PASSWORD: string;
   AUTH_SECRET: string;
+  ALLOWED_ORIGINS?: string;
 }
 
 export interface ListResult<T> {

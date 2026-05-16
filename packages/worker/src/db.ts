@@ -58,23 +58,25 @@ export async function insertEmail(
   params: InsertEmailParams,
 ): Promise<number | null> {
   // INSERT OR IGNORE avoids TOCTOU race on message_id UNIQUE constraint
-  const result = await db.prepare(
+  const insertResult = await db.prepare(
     `INSERT OR IGNORE INTO emails (message_id, sender, recipient, subject, raw_size)
      VALUES (?, ?, ?, ?, ?)`
   ).bind(params.message_id, params.sender, params.recipient, params.subject, params.raw_size)
    .run();
 
   // If no rows changed, this was a duplicate — another worker already inserted it
-  if ((result.meta.changes ?? 0) === 0) return null;
+  if ((insertResult.meta.changes ?? 0) === 0) return null;
 
-  const emailId = result.meta.last_row_id;
+  const emailId = insertResult.meta.last_row_id;
   if (emailId === undefined || emailId === null) return null;
 
-  // Body inserted separately (not in the same batch) — acceptable for MVP;
-  // if body insert fails, the email metadata still exists without a body
-  await db.prepare(
-    'INSERT INTO email_bodies (email_id, text_body, html_body, headers) VALUES (?, ?, ?, ?)'
-  ).bind(emailId, params.text_body, params.html_body, params.headers).run();
+  // Use batch for atomic body insertion (single statement here, but batch pattern
+  // prevents partial failures and makes future multi-statement bodies safe)
+  await db.batch([
+    db.prepare(
+      'INSERT INTO email_bodies (email_id, text_body, html_body, headers) VALUES (?, ?, ?, ?)'
+    ).bind(emailId, params.text_body, params.html_body, params.headers),
+  ]);
 
   return Number(emailId);
 }

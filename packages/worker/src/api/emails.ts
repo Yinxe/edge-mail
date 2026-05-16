@@ -24,7 +24,7 @@ export async function handleToggleRead(id: number, request: Request, env: Env): 
 
   const ok = await setEmailRead(env.DB, id, isRead);
   if (!ok) {
-    return Response.json({ error: 'Failed to update' }, { status: 500 });
+    return Response.json({ error: 'Email not found' }, { status: 404 });
   }
   return Response.json({ ok: true });
 }
