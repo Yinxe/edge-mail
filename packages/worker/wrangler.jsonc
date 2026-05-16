@@ -1,0 +1,12 @@
+{
+  "name": "email-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-05-16",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "edge-mail-db",
+      "database_id": "xxx"
+    }
+  ]
+}
