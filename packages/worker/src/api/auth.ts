@@ -6,6 +6,14 @@ function hex(buf: ArrayBuffer): string {
     .join('');
 }
 
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
 async function generateToken(secret: string): Promise<{ token: string; expiresAt: number }> {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(secret);
@@ -40,7 +48,12 @@ export async function verifyToken(token: string, secret: string): Promise<boolea
   const payload = encoder.encode(expiresStr);
   const expectedSig = await crypto.subtle.sign('HMAC', key, payload);
 
-  return hex(expectedSig) === sigHex;
+  // Timing-safe comparison via Web Crypto API
+  const expectedBytes = new Uint8Array(expectedSig);
+  const actualBytes = hexToBytes(sigHex);
+  if (expectedBytes.byteLength !== actualBytes.byteLength) return false;
+  // @ts-expect-error timingSafeEqual exists in Workers runtime but not in lib types
+  return crypto.subtle.timingSafeEqual(expectedBytes.buffer, actualBytes.buffer);
 }
 
 export async function handleAuth(request: Request, env: Env): Promise<Response> {
