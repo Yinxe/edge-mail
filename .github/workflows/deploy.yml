@@ -71,20 +71,9 @@ jobs:
       - run: pnpm install
 
       - name: Inject database_id
-        run: |
-          node -e "
-            const fs = require('fs');
-            const p = 'packages/worker/wrangler.jsonc';
-            const raw = fs.readFileSync(p, 'utf8').replace(/\/\/.*$/gm, '');
-            const c = JSON.parse(raw);
-            c.d1_databases[0].database_id = '${{ vars.D1_DATABASE_ID }}';
-            fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
-          "
-
-      - name: Debug — verify injected wrangler.jsonc
-        run: |
-          echo "=== wrangler.jsonc after inject ==="
-          cat packages/worker/wrangler.jsonc | head -20
+        run: node .github/scripts/inject-database-id.js
+        env:
+          D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
 
       - name: Run D1 migrations
         working-directory: packages/worker
