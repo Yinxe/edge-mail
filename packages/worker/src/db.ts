@@ -57,24 +57,26 @@ export async function insertEmail(
   db: D1Database,
   params: InsertEmailParams,
 ): Promise<number | null> {
-  const existing = await db.prepare(
-    'SELECT id FROM emails WHERE message_id = ?'
-  ).bind(params.message_id).first<{ id: number }>();
-  if (existing) return null;
+  // INSERT OR IGNORE avoids TOCTOU race on message_id UNIQUE constraint
+  const result = await db.prepare(
+    `INSERT OR IGNORE INTO emails (message_id, sender, recipient, subject, raw_size)
+     VALUES (?, ?, ?, ?, ?)`
+  ).bind(params.message_id, params.sender, params.recipient, params.subject, params.raw_size)
+   .run();
 
-  const batch = [
-    db.prepare(
-      'INSERT INTO emails (message_id, sender, recipient, subject, raw_size) VALUES (?, ?, ?, ?, ?)'
-    ).bind(params.message_id, params.sender, params.recipient, params.subject, params.raw_size),
-    db.prepare(
-      'INSERT INTO email_bodies (email_id, text_body, html_body, headers) VALUES (last_insert_rowid(), ?, ?, ?)'
-    ).bind(params.text_body, params.html_body, params.headers),
-  ];
+  // If no rows changed, this was a duplicate — another worker already inserted it
+  if ((result.meta.changes ?? 0) === 0) return null;
 
-  const results = await db.batch(batch);
-  const emailResult = results[0];
+  const emailId = result.meta.last_row_id;
+  if (emailId === undefined || emailId === null) return null;
 
-  return emailResult.meta.last_row_id ?? null;
+  // Body inserted separately (not in the same batch) — acceptable for MVP;
+  // if body insert fails, the email metadata still exists without a body
+  await db.prepare(
+    'INSERT INTO email_bodies (email_id, text_body, html_body, headers) VALUES (?, ?, ?, ?)'
+  ).bind(emailId, params.text_body, params.html_body, params.headers).run();
+
+  return Number(emailId);
 }
 
 /** Toggle read status */
@@ -86,5 +88,5 @@ export async function setEmailRead(
   const result = await db.prepare(
     'UPDATE emails SET is_read = ? WHERE id = ?'
   ).bind(isRead ? 1 : 0, id).run();
-  return result.success;
+  return (result.meta.changes ?? 0) > 0;
 }
