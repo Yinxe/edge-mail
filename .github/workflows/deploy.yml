@@ -90,6 +90,11 @@ jobs:
             fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
           "
 
+      - name: Debug — verify injected wrangler.jsonc
+        run: |
+          echo "=== wrangler.jsonc after inject ==="
+          cat packages/worker/wrangler.jsonc | head -20
+
       - name: Run D1 migrations
         working-directory: packages/worker
         run: npx wrangler d1 execute edge-mail-db --file=schema.sql
