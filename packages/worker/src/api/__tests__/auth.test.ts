@@ -22,7 +22,7 @@ describe('handleAuth', () => {
 
     const res = await handleAuth(req, mockEnv());
     expect(res.status).toBe(401);
-    const body = await res.json();
+    const body: { error?: string } = await res.json();
     expect(body.error).toBe('Invalid password');
   });
 
@@ -59,10 +59,8 @@ describe('handleAuth', () => {
     const res = await handleAuth(req, env);
     expect(res.status).toBe(200);
 
-    const body = await res.json();
-    expect(body.token).toBeDefined();
+    const body: { token: string; expiresAt: number } = await res.json();
     expect(typeof body.token).toBe('string');
-    expect(body.expiresAt).toBeDefined();
     expect(typeof body.expiresAt).toBe('number');
 
     // Token should be verifiable
@@ -87,7 +85,7 @@ describe('handleAuth', () => {
 
     const env = mockEnv();
     const res = await handleAuth(req, env);
-    const body = await res.json();
+    const body: { token: string } = await res.json();
 
     // Tamper with the token
     const parts = body.token.split('.');

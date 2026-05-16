@@ -73,25 +73,18 @@ export async function handleAuth(request: Request, env: Env): Promise<Response> 
   let body: Record<string, unknown>;
   try {
     body = await request.json() as Record<string, unknown>;
-  } catch (err) {
-    console.error('[AUTH] JSON parse error:', err);
+  } catch {
     return Response.json({ error: 'Invalid request' }, { status: 400 });
   }
 
-  console.log('[AUTH] body.password type:', typeof body.password, 'value:', body.password);
-  console.log('[AUTH] env.AUTH_PASSWORD type:', typeof env.AUTH_PASSWORD, 'value:', env.AUTH_PASSWORD);
-
   if (typeof body.password !== 'string') {
-    console.log('[AUTH] password is not a string, rejecting');
     return Response.json({ error: 'Invalid password' }, { status: 401 });
   }
 
   if (!timingSafeStringEqual(body.password, env.AUTH_PASSWORD)) {
-    console.log('[AUTH] timingSafeStringEqual returned false - password mismatch');
     return Response.json({ error: 'Invalid password' }, { status: 401 });
   }
 
-  console.log('[AUTH] login success, generating token');
   const { token, expiresAt } = await generateToken(env.AUTH_SECRET);
 
   return Response.json({ token, expiresAt });

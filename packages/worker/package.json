@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "wrangler dev --config wrangler.jsonc",
     "deploy": "wrangler deploy --config wrangler.jsonc",
+    "db:local": "wrangler d1 execute edge-mail-db --local --file=schema.sql",
     "types": "wrangler types",
     "test": "vitest run"
   },

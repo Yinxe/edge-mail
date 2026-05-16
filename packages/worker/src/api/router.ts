@@ -37,16 +37,7 @@ async function authenticate(request: Request, env: Env): Promise<Response | null
   return null; // authenticated
 }
 
-let loggedEnv = false;
-
 export async function handleRequest(request: Request, env: Env): Promise<Response> {
-  if (!loggedEnv) {
-    console.log('[ROUTER] AUTH_PASSWORD set:', typeof env.AUTH_PASSWORD === 'string', 'length:', env.AUTH_PASSWORD?.length);
-    console.log('[ROUTER] AUTH_SECRET set:', typeof env.AUTH_SECRET === 'string', 'length:', env.AUTH_SECRET?.length);
-    console.log('[ROUTER] DB bound:', !!env.DB);
-    loggedEnv = true;
-  }
-
   const url = new URL(request.url);
   const path = url.pathname;
   const method = request.method;
