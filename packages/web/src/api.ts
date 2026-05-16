@@ -1,7 +1,7 @@
 import { token } from './store'
 import type { EmailMeta, EmailDetail, ListResult } from './store'
 
-const BASE = import.meta.env.VITE_API_BASE || ''
+const BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/+$/, '')
 
 function authHeaders(): Record<string, string> {
   return {

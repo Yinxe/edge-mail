@@ -39,7 +39,7 @@ async function authenticate(request: Request, env: Env): Promise<Response | null
 
 export async function handleRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
-  const path = url.pathname;
+  const path = url.pathname.replace(/\/+/g, '/');
   const method = request.method;
 
   // CORS preflight
