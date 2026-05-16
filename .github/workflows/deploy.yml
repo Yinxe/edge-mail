@@ -54,6 +54,13 @@ jobs:
           EMAIL_DOMAIN: ${{ vars.EMAIL_DOMAIN }}
         run: .github/scripts/validate.sh
 
+      - name: Configure Email Routing
+        run: .github/scripts/configure-email-routing.sh
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          EMAIL_DOMAIN: ${{ vars.EMAIL_DOMAIN }}
+
   deploy-worker:
     if: inputs.deploy-worker
     needs: validate
@@ -83,14 +90,6 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Configure Email Routing
-        if: vars.EMAIL_DOMAIN
-        run: .github/scripts/configure-email-routing.sh
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          EMAIL_DOMAIN: ${{ vars.EMAIL_DOMAIN }}
 
       - name: Set Worker secrets
         working-directory: packages/worker
