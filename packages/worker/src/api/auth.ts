@@ -6,6 +6,18 @@ function hex(buf: ArrayBuffer): string {
     .join('');
 }
 
+/** Constant-time byte-level comparison (no Web Crypto dependency) */
+function timingSafeEqual(a: ArrayBufferLike, b: ArrayBufferLike): boolean {
+  if (a.byteLength !== b.byteLength) return false;
+  const ua = new Uint8Array(a);
+  const ub = new Uint8Array(b);
+  let result = 0;
+  for (let i = 0; i < ua.length; i++) {
+    result |= ua[i] ^ ub[i];
+  }
+  return result === 0;
+}
+
 function hexToBytes(hex: string): Uint8Array | null {
   if (hex.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(hex)) return null;
   const bytes = new Uint8Array(hex.length / 2);
@@ -47,21 +59,14 @@ export async function verifyToken(token: string, secret: string): Promise<boolea
   if (!actualBytes) return false;
   if (expectedBytes.byteLength !== actualBytes.byteLength) return false;
 
-  const subtle = crypto.subtle as SubtleCrypto & {
-    timingSafeEqual(a: ArrayBufferLike, b: ArrayBufferLike): boolean;
-  };
-  return subtle.timingSafeEqual(expectedBytes.buffer, actualBytes.buffer);
+  return timingSafeEqual(expectedBytes.buffer, actualBytes.buffer);
 }
 
-async function timingSafeStringEqual(a: string, b: string): Promise<boolean> {
+function timingSafeStringEqual(a: string, b: string): boolean {
   const encoder = new TextEncoder();
   const bufA = encoder.encode(a);
   const bufB = encoder.encode(b);
-  if (bufA.byteLength !== bufB.byteLength) return false;
-  const subtle = crypto.subtle as SubtleCrypto & {
-    timingSafeEqual(a: ArrayBufferLike, b: ArrayBufferLike): boolean;
-  };
-  return subtle.timingSafeEqual(bufA.buffer, bufB.buffer);
+  return timingSafeEqual(bufA.buffer, bufB.buffer);
 }
 
 export async function handleAuth(request: Request, env: Env): Promise<Response> {
@@ -76,7 +81,7 @@ export async function handleAuth(request: Request, env: Env): Promise<Response> 
     return Response.json({ error: 'Invalid password' }, { status: 401 });
   }
 
-  if (!(await timingSafeStringEqual(body.password, env.AUTH_PASSWORD))) {
+  if (!timingSafeStringEqual(body.password, env.AUTH_PASSWORD)) {
     return Response.json({ error: 'Invalid password' }, { status: 401 });
   }
 
