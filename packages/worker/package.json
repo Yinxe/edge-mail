@@ -5,10 +5,13 @@
   "scripts": {
     "dev": "wrangler dev --config wrangler.jsonc",
     "deploy": "wrangler deploy --config wrangler.jsonc",
-    "types": "wrangler types"
+    "types": "wrangler types",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250415.0",
+    "@types/node": "^25.8.0",
+    "vitest": "^4.1.6",
     "wrangler": "^4.15.0"
   },
   "dependencies": {
