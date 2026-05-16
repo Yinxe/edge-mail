@@ -1,0 +1,105 @@
+name: Deploy
+
+# === 前置准备 (只需做一次) ===
+#
+# 1. 在 GitHub 仓库 Settings → Secrets and variables → Actions 中配置:
+#
+#    Secrets:
+#      CLOUDFLARE_API_TOKEN   — Cloudflare API Token (Email Routing + Workers + D1 权限)
+#      CLOUDFLARE_ACCOUNT_ID  — Cloudflare Account ID
+#      AUTH_PASSWORD          — 邮件系统登录密码
+#      AUTH_SECRET            — HMAC 签名密钥
+#
+#    Variables:
+#      D1_DATABASE_ID         — D1 数据库 ID (npx wrangler d1 create edge-mail-db 获取)
+#      VITE_API_BASE          — Worker URL (如 https://email-worker.xxx.workers.dev)
+#
+# 2. 创建 Cloudflare Pages 项目:
+#      npx wrangler pages project create edge-mail-web --production-branch=master
+#
+# 3. 配置 Email Routing 规则 (Dashboard 操作):
+#      *@yourdomain.com → email-worker
+#
+# === 工作流触发后自动执行 ===
+#     Worker: D1 迁移 → 部署 Worker → 注入 Secrets
+#     Web:    构建 SPA   → 部署 Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  deploy-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - run: pnpm install
+
+      - name: Inject database_id
+        run: |
+          sed -i "s|\"database_id\": \"xxx\"|\"database_id\": \"${{ vars.D1_DATABASE_ID }}\"|" \
+            packages/worker/wrangler.jsonc
+
+      - name: Run D1 migrations
+        working-directory: packages/worker
+        run: npx wrangler d1 execute edge-mail-db --file=schema.sql
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy Worker
+        working-directory: packages/worker
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Set Worker secrets
+        working-directory: packages/worker
+        run: |
+          printf '%s' "${{ secrets.AUTH_PASSWORD }}" | npx wrangler secret put AUTH_PASSWORD
+          printf '%s' "${{ secrets.AUTH_SECRET }}"   | npx wrangler secret put AUTH_SECRET
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  deploy-web:
+    needs: deploy-worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - run: pnpm install
+
+      - name: Build Web
+        working-directory: packages/web
+        run: npx vite build
+        env:
+          VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+
+      - name: Deploy to Cloudflare Pages
+        working-directory: packages/web
+        run: npx wrangler pages deploy dist --project-name=edge-mail-web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
