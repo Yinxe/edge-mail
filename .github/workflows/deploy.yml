@@ -41,6 +41,8 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+
       - name: Check required secrets & variables
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
