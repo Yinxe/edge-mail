@@ -1,12 +1,12 @@
 {
-  "name": "email-worker",
+  "name": "edge-mail-worker",
   "main": "src/index.ts",
   "compatibility_date": "2025-05-16",
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "edge-mail-db",
-      "database_id": "xxx"
+      "database_id": "GITHUB ACTION AUTO INJECT vars.D1_DATABASE_ID"
     }
   ]
 }

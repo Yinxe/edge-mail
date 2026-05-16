@@ -145,7 +145,7 @@ EOF
 ```bash
 cat > packages/worker/wrangler.jsonc << 'EOF'
 {
-  "name": "email-worker",
+  "name": "edge-mail-worker",
   "main": "src/index.ts",
   "compatibility_date": "2025-05-16",
   "d1_databases": [
@@ -269,7 +269,7 @@ EOF
 
 ```bash
 cat > packages/web/.env << 'EOF'
-VITE_API_BASE=https://email-worker.xxx.workers.dev
+VITE_API_BASE=https://edge-mail-worker.xxx.workers.dev
 EOF
 ```
 

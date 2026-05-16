@@ -13,14 +13,12 @@ name: Deploy
 #
 # 【Variables 标签 → New repository variable】
 #   D1_DATABASE_ID         — D1 UUID (npx wrangler d1 create edge-mail-db 获取)
-#   VITE_API_BASE          — Worker URL (如 https://email-worker.xxx.workers.dev)
+#   VITE_API_BASE          — Worker URL (如 https://edge-mail-worker.xxx.workers.dev)
 #
 # ⚠ 不要用 Environment secrets/variables，用 Repository 级别
 #
-# 另需一次性的 CLI 操作:
-#   npx wrangler pages project create edge-mail-web --production-branch=master
 # 以及 Dashboard 操作：
-#   Email Routing 规则: *@yourdomain.com → email-worker
+#   Email Routing 规则: *@yourdomain.com → edge-mail-worker
 #
 # === 工作流触发后自动执行 ===
 #     Worker: D1 迁移 → 部署 Worker → 注入 Secrets
@@ -32,7 +30,33 @@ on:
   workflow_dispatch:
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required secrets & variables
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AUTH_PASSWORD: ${{ secrets.AUTH_PASSWORD }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
+          VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+        run: |
+          errors=0
+          for var in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID AUTH_PASSWORD AUTH_SECRET D1_DATABASE_ID VITE_API_BASE; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Missing required: $var"
+              errors=$((errors+1))
+            fi
+          done
+          if [ $errors -gt 0 ]; then
+            echo "::error::$errors required secret(s)/variable(s) are missing. Check Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          echo "✅ All required secrets and variables are configured"
+
   deploy-worker:
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,8 +74,14 @@ jobs:
 
       - name: Inject database_id
         run: |
-          sed -i "s|\"database_id\": \"xxx\"|\"database_id\": \"${{ vars.D1_DATABASE_ID }}\"|" \
-            packages/worker/wrangler.jsonc
+          node -e "
+            const fs = require('fs');
+            const p = 'packages/worker/wrangler.jsonc';
+            const raw = fs.readFileSync(p, 'utf8').replace(/\/\/.*$/gm, '');
+            const c = JSON.parse(raw);
+            c.d1_databases[0].database_id = '${{ vars.D1_DATABASE_ID }}';
+            fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
+          "
 
       - name: Run D1 migrations
         working-directory: packages/worker
@@ -98,6 +128,13 @@ jobs:
         run: npx vite build
         env:
           VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+
+      - name: Ensure Pages project exists
+        working-directory: packages/web
+        run: npx wrangler pages project create edge-mail-web --production-branch=master || true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Deploy to Cloudflare Pages
         working-directory: packages/web

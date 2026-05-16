@@ -160,8 +160,8 @@ npx wrangler deploy
 
 部署成功后输出类似：
 ```
-Deployed email-worker (id: email-worker)
-  https://email-worker.<你的子域名>.workers.dev
+Deployed edge-mail-worker (id: edge-mail-worker)
+  https://edge-mail-worker.<你的子域名>.workers.dev
 ```
 
 ### 2.7 配置 Email Routing 规则
@@ -169,11 +169,11 @@ Deployed email-worker (id: email-worker)
 在 [Cloudflare Dashboard → Email Routing → Routing Rules](https://dash.cloudflare.com/) 中添加规则：
 
 - **Custom address**: `*` (或 `*@yourdomain.com`)
-- **Action**: Send to Worker → 选择 `email-worker`
+- **Action**: Send to Worker → 选择 `edge-mail-worker`
 
 也可以用 CLI：
 ```bash
-npx wrangler email routing rules create yourdomain.com --action=worker --destination=email-worker
+npx wrangler email routing rules create yourdomain.com --action=worker --destination=edge-mail-worker
 ```
 
 ### 2.8 部署前端
@@ -182,7 +182,7 @@ npx wrangler email routing rules create yourdomain.com --action=worker --destina
 cd packages/web
 
 # 构建（注入 Worker 地址）
-VITE_API_BASE=https://email-worker.<子域名>.workers.dev npx vite build
+VITE_API_BASE=https://edge-mail-worker.<子域名>.workers.dev npx vite build
 
 # 部署到 Cloudflare Pages
 npx wrangler pages deploy dist --project-name=edge-mail-web
@@ -232,7 +232,7 @@ npx wrangler pages deploy dist --project-name=edge-mail-web
 | Name | 说明 |
 |------|------|
 | `D1_DATABASE_ID` | D1 数据库 UUID（`npx wrangler d1 create edge-mail-db` 返回的字符串） |
-| `VITE_API_BASE` | Worker 部署后的 URL，如 `https://email-worker.xxx.workers.dev` |
+| `VITE_API_BASE` | Worker 部署后的 URL，如 `https://edge-mail-worker.xxx.workers.dev` |
 
 ### 3.2 一次性前置操作
 
@@ -241,7 +241,7 @@ npx wrangler pages deploy dist --project-name=edge-mail-web
 npx wrangler pages project create edge-mail-web --production-branch=master
 
 # 2. 在 Dashboard 配置 Email Routing 规则
-#    *@yourdomain.com → email-worker
+#    *@yourdomain.com → edge-mail-worker
 ```
 
 ### 3.3 触发部署
@@ -278,7 +278,7 @@ npx wrangler pages project create edge-mail-web --production-branch=master
 
 | 变量 | 说明 | 本地开发 | 生产 |
 |------|------|---------|------|
-| `VITE_API_BASE` | Worker API 地址 | 留空（Vite 代理转发） | `https://email-worker.xxx.workers.dev` |
+| `VITE_API_BASE` | Worker API 地址 | 留空（Vite 代理转发） | `https://edge-mail-worker.xxx.workers.dev` |
 
 ---
 

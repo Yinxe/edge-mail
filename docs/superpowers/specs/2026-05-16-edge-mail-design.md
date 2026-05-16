@@ -199,7 +199,7 @@ export const currentEmail = ref<EmailDetail | null>(null)
 
 ```bash
 # .env
-VITE_API_BASE=https://email-worker.xxx.workers.dev
+VITE_API_BASE=https://edge-mail-worker.xxx.workers.dev
 # 本地开发: VITE_API_BASE=http://localhost:8787
 ```
 
@@ -208,7 +208,7 @@ VITE_API_BASE=https://email-worker.xxx.workers.dev
 ```jsonc
 // packages/worker/wrangler.jsonc
 {
-  "name": "email-worker",
+  "name": "edge-mail-worker",
   "main": "src/index.ts",
   "compatibility_date": "2025-05-16",
   "d1_databases": [{
@@ -219,7 +219,7 @@ VITE_API_BASE=https://email-worker.xxx.workers.dev
 }
 ```
 
-> Email Routing 不需要在 wrangler.jsonc 中声明 binding，只需在 Dashboard/CLI 配置路由规则 `*@domain.com` → `email-worker`。
+> Email Routing 不需要在 wrangler.jsonc 中声明 binding，只需在 Dashboard/CLI 配置路由规则 `*@domain.com` → `edge-mail-worker`。
 
 ## 部署流程
 
@@ -240,7 +240,7 @@ npx wrangler secret put AUTH_SECRET    # 交互输入 HMAC 密钥
 # 5. 部署 Worker
 npx wrangler deploy --config packages/worker/wrangler.jsonc
 
-# 6. 配置 Email Routing 规则: *@domain.com → email-worker (Dashboard 或 CLI)
+# 6. 配置 Email Routing 规则: *@domain.com → edge-mail-worker (Dashboard 或 CLI)
 
 # 7. 部署前端
 cd packages/web && npx wrangler pages deploy dist --project-name=edge-mail-web
