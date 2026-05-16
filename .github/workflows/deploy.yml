@@ -25,9 +25,16 @@ name: Deploy
 #     Web:    构建 SPA   → 部署 Pages
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
+    inputs:
+      deploy-worker:
+        description: '部署 Worker'
+        type: boolean
+        default: true
+      deploy-web:
+        description: '部署 Web'
+        type: boolean
+        default: true
 
 jobs:
   validate:
