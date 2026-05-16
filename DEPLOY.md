@@ -205,23 +205,34 @@ npx wrangler pages deploy dist --project-name=edge-mail-web
 
 ### 3.1 配置 GitHub Secrets & Variables
 
-在仓库 **Settings → Secrets and variables → Actions** 中配置：
+进入仓库页面 → 顶部 **Settings** → 左侧 **Secrets and variables** → **Actions**。
 
-**Secrets（加密存储）：**
+你会看到页面顶部有两个标签页：
 
-| 名称 | 说明 |
+| 标签页 | 用途 | 引用方式 | 值是否加密 |
+|--------|------|---------|-----------|
+| **Secrets** | Token、密码等敏感信息 | `${{ secrets.NAME }}` | ✅ 日志中自动隐藏 |
+| **Variables** | 非敏感的配置值（如 URL、ID） | `${{ vars.NAME }}` | ❌ 明文可见 |
+
+> ⚠️ 页面还会看到 "Environment secrets/variables" 分区 — **不要用**。我们只需要 **Repository** 级别的配置，所有 job 都能访问。
+
+---
+
+**在 Secrets 标签页**点击 New repository secret，创建 4 个：
+
+| Name | 说明 |
 |------|------|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账户 ID（Dashboard → Workers 页面 URL 中获取） |
-| `AUTH_PASSWORD` | 登录密码 |
-| `AUTH_SECRET` | HMAC 签名密钥 |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token（Workers + D1 + Pages + Email Routing 权限） |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 账户 ID（Dashboard 地址栏 `accounts/` 后面的 32 位 hex） |
+| `AUTH_PASSWORD` | 登录密码（如 `123456`） |
+| `AUTH_SECRET` | HMAC 签名密钥（`openssl rand -hex 32` 生成） |
 
-**Variables（明文存储）：**
+**切换到 Variables 标签页**点击 New repository variable，创建 2 个：
 
-| 名称 | 说明 |
+| Name | 说明 |
 |------|------|
-| `D1_DATABASE_ID` | D1 数据库 ID（`npx wrangler d1 create edge-mail-db` 返回的 UUID） |
-| `VITE_API_BASE` | Worker URL，如 `https://email-worker.xxx.workers.dev` |
+| `D1_DATABASE_ID` | D1 数据库 UUID（`npx wrangler d1 create edge-mail-db` 返回的字符串） |
+| `VITE_API_BASE` | Worker 部署后的 URL，如 `https://email-worker.xxx.workers.dev` |
 
 ### 3.2 一次性前置操作
 

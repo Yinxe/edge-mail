@@ -2,23 +2,25 @@ name: Deploy
 
 # === 前置准备 (只需做一次) ===
 #
-# 1. 在 GitHub 仓库 Settings → Secrets and variables → Actions 中配置:
+# 进入: Settings → Secrets and variables → Actions
+# 页面顶部两个标签页，分别配置:
 #
-#    Secrets:
-#      CLOUDFLARE_API_TOKEN   — Cloudflare API Token (Email Routing + Workers + D1 权限)
-#      CLOUDFLARE_ACCOUNT_ID  — Cloudflare Account ID
-#      AUTH_PASSWORD          — 邮件系统登录密码
-#      AUTH_SECRET            — HMAC 签名密钥
+# 【Secrets 标签 → New repository secret】
+#   CLOUDFLARE_API_TOKEN   — Cloudflare API Token (Email Routing + Workers + D1 权限)
+#   CLOUDFLARE_ACCOUNT_ID  — Cloudflare Account ID
+#   AUTH_PASSWORD          — 登录密码
+#   AUTH_SECRET            — HMAC 签名密钥
 #
-#    Variables:
-#      D1_DATABASE_ID         — D1 数据库 ID (npx wrangler d1 create edge-mail-db 获取)
-#      VITE_API_BASE          — Worker URL (如 https://email-worker.xxx.workers.dev)
+# 【Variables 标签 → New repository variable】
+#   D1_DATABASE_ID         — D1 UUID (npx wrangler d1 create edge-mail-db 获取)
+#   VITE_API_BASE          — Worker URL (如 https://email-worker.xxx.workers.dev)
 #
-# 2. 创建 Cloudflare Pages 项目:
-#      npx wrangler pages project create edge-mail-web --production-branch=master
+# ⚠ 不要用 Environment secrets/variables，用 Repository 级别
 #
-# 3. 配置 Email Routing 规则 (Dashboard 操作):
-#      *@yourdomain.com → email-worker
+# 另需一次性的 CLI 操作:
+#   npx wrangler pages project create edge-mail-web --production-branch=master
+# 以及 Dashboard 操作：
+#   Email Routing 规则: *@yourdomain.com → email-worker
 #
 # === 工作流触发后自动执行 ===
 #     Worker: D1 迁移 → 部署 Worker → 注入 Secrets
