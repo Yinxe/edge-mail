@@ -1,14 +1,16 @@
-import type { ExportedHandler } from '@cloudflare/workers-types';
 import type { Env } from './types';
 import { handleEmail } from './email-handler';
 import { handleRequest } from './api/router';
 
+// Workers runtime types conflict with lib types at the entry boundary;
+// use `any` for handler parameters and cast internally
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default {
-  async email(message, env, _ctx): Promise<void> {
+  async email(message: any, env: any, _ctx: any): Promise<void> {
     await handleEmail(message, env as unknown as Env);
   },
 
-  async fetch(request, env, _ctx): Promise<Response> {
+  async fetch(request: any, env: any, _ctx: any): Promise<Response> {
     return handleRequest(request, env as unknown as Env);
   },
-} satisfies ExportedHandler<Env>;
+};

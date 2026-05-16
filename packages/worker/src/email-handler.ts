@@ -12,8 +12,8 @@ export async function handleEmail(
   message: ForwardableEmailMessage,
   env: Env,
 ): Promise<void> {
-  // Buffer raw (single-use stream)
-  const rawBuffer = await new Response(message.raw as any).arrayBuffer();
+  // Buffer raw (single-use stream); Workers runtime accepts ReadableStream as BodyInit
+  const rawBuffer = await new Response(message.raw as BodyInit).arrayBuffer();
   const parsed = await PostalMime.parse(rawBuffer);
 
   const messageId = message.headers.get('message-id') || '';
