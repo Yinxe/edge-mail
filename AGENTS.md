@@ -30,6 +30,8 @@ Vue 3 Composition API + Naive UI + TailwindCSS v4。Vite 代理 `/api` 到 Worke
 | CI 部署 / 发布流程 | `docs/rules/ci-cd.md` |
 | 建表 / 改表 / D1 迁移 | `docs/rules/sql-migrations.md` |
 | 开发流程（SDD+TDD/TODO 规范） | `docs/rules/development-practices.md` |
+| 数据库业务规范 / 事务规范 | `docs/rules/database-practices.md` |
 | UI 设计规范 | `DESIGN.md`（根目录） |
+| Bug 记录 / 排查方案 | `docs/bugs/` 目录 |
 
 > 以上规则文件通过 `opencode.jsonc` 的 `instructions` 自动加载到 AI system prompt。

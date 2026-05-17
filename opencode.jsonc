@@ -13,7 +13,8 @@
     "docs/rules/testing.md",
     "docs/rules/ci-cd.md",
     "docs/rules/sql-migrations.md",
-    "docs/rules/development-practices.md"
+    "docs/rules/development-practices.md",
+    "docs/rules/database-practices.md"
   ],
 
   // === 技能路径 ===

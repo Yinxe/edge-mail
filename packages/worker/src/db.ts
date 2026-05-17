@@ -118,12 +118,16 @@ export async function searchEmails(
   return { items: results, total, page, limit };
 }
 
-/** Delete an email and its body (via ON DELETE CASCADE) */
+/** Delete an email and its body (atomic via batch) */
 export async function deleteEmail(
   db: D1Database,
   id: number,
 ): Promise<boolean> {
-  const result = await db.prepare('DELETE FROM emails WHERE id = ?').bind(id).run();
+  const results = await db.batch([
+    db.prepare('DELETE FROM email_bodies WHERE email_id = ?').bind(id),
+    db.prepare('DELETE FROM emails WHERE id = ?').bind(id),
+  ]);
   // TODO: 删除关联的附件资源（当附件存储功能实现时）
-  return (result.meta.changes ?? 0) > 0;
+  const emailResult = results[1] as { meta: { changes: number } };
+  return (emailResult.meta.changes ?? 0) > 0;
 }

@@ -21,7 +21,8 @@ function createMockD1(overrides?: {
   };
   return {
     prepare: () => stmt,
-    batch: async () => [],
+    batch: async (stmts: unknown[]) =>
+      stmts.map(() => ({ meta: { changes: overrides?.runChanges ?? 0 } })),
   } as unknown as D1Database;
 }
 
