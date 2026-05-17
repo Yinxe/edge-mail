@@ -294,8 +294,6 @@ function formatFullDate(dateStr: string): string {
 .detail__meta-pill {
   display: inline-flex;
   align-items: center;
-  background: #F5F3F4;
-  border-radius: 8px;
   border: 1px solid #EAE5E8;
   min-width: 0;
   width: fit-content;
@@ -309,16 +307,15 @@ function formatFullDate(dateStr: string): string {
   font-size: inherit;
   text-align: left;
   padding: 0;
-  border-color: #E3DDE0;
-}
-
-.detail__meta-pill--action:hover {
-  background: #FFF5F6;
   border-color: #E85D75;
 }
 
+.detail__meta-pill--action:hover {
+  border-color: #D94D65;
+  box-shadow: 0 0 0 1px #D94D65;
+}
+
 .detail__meta-pill--action:active {
-  background: #FDE8EB;
   transform: scale(0.98);
 }
 
@@ -328,23 +325,23 @@ function formatFullDate(dateStr: string): string {
   font-weight: 700;
   letter-spacing: 0.04em;
   padding: 5px 10px;
-  border-radius: 7px 0 0 7px;
-  background: #E8E4E6;
   color: #6B5E63;
+  border-right: 1px solid #EAE5E8;
+}
+
+.detail__meta-pill--action .detail__pill-label {
+  border-right-color: #E85D75;
 }
 
 .detail__pill-label--info {
-  background: #E5F0FA;
   color: #4A9FE5;
 }
 
 .detail__pill-label--warning {
-  background: #FEF0DB;
   color: #F5A623;
 }
 
 .detail__pill-label--default {
-  background: #E8E4E6;
   color: #6B5E63;
 }
 
