@@ -1,6 +1,6 @@
 import type { Env } from './types';
 import { handleEmail } from './email-handler';
-import { handleRequest } from './api/router';
+import app from './api/router';
 
 // Workers runtime types conflict with lib types at the entry boundary;
 // use `any` for handler parameters and cast internally
@@ -10,7 +10,7 @@ export default {
     await handleEmail(message, env as unknown as Env);
   },
 
-  async fetch(request: any, env: any, _ctx: any): Promise<Response> {
-    return handleRequest(request, env as unknown as Env);
+  async fetch(request: any, env: any, ctx: any): Promise<Response> {
+    return app.fetch(request, env as unknown as Env, ctx);
   },
 };

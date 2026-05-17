@@ -1,62 +1,68 @@
 import { describe, it, expect } from 'vitest';
-import { handleAuth, verifyToken } from '../auth';
+import { app } from '../router';
+import { verifyToken } from '../auth';
 
 const TEST_PASSWORD = '123456';
 const TEST_SECRET = 'test-secret-for-hmac';
 
+function mockD1() {
+  const stmt = {
+    bind: () => stmt,
+    all: async () => ({ results: [] }),
+    first: async () => ({ total: 0 }),
+    run: async () => ({ meta: { changes: 0 } }),
+  };
+  return {
+    prepare: () => stmt,
+    batch: async () => [],
+  } as unknown as D1Database;
+}
+
 function mockEnv(overrides?: Partial<{ password: string; secret: string }>) {
   return {
-    DB: {} as D1Database,
+    DB: mockD1(),
     AUTH_PASSWORD: overrides?.password ?? TEST_PASSWORD,
     AUTH_SECRET: overrides?.secret ?? TEST_SECRET,
   };
 }
 
-describe('handleAuth', () => {
+describe('POST /api/auth', () => {
   it('should reject wrong password', async () => {
-    const req = new Request('http://localhost/api/auth', {
+    const res = await app.request('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: 'wrong' }),
-    });
-
-    const res = await handleAuth(req, mockEnv());
+    }, mockEnv());
     expect(res.status).toBe(401);
     const body: { error?: string } = await res.json();
     expect(body.error).toBe('Invalid password');
   });
 
   it('should reject empty body', async () => {
-    const req = new Request('http://localhost/api/auth', {
+    const res = await app.request('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
-    });
-
-    const res = await handleAuth(req, mockEnv());
+    }, mockEnv());
     expect(res.status).toBe(401);
   });
 
   it('should reject invalid JSON', async () => {
-    const req = new Request('http://localhost/api/auth', {
+    const res = await app.request('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: 'not json',
-    });
-
-    const res = await handleAuth(req, mockEnv());
+    }, mockEnv());
     expect(res.status).toBe(400);
   });
 
   it('should accept correct password and return token', async () => {
-    const req = new Request('http://localhost/api/auth', {
+    const env = mockEnv();
+    const res = await app.request('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: TEST_PASSWORD }),
-    });
-
-    const env = mockEnv();
-    const res = await handleAuth(req, env);
+    }, env);
     expect(res.status).toBe(200);
 
     const body: { token: string; expiresAt: number } = await res.json();
@@ -77,14 +83,12 @@ describe('handleAuth', () => {
   });
 
   it('should reject tampered token', async () => {
-    const req = new Request('http://localhost/api/auth', {
+    const env = mockEnv();
+    const res = await app.request('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: TEST_PASSWORD }),
-    });
-
-    const env = mockEnv();
-    const res = await handleAuth(req, env);
+    }, env);
     const body: { token: string } = await res.json();
 
     // Tamper with the token
@@ -96,25 +100,55 @@ describe('handleAuth', () => {
 });
 
 describe('timingSafeStringEqual (indirect test)', () => {
-  it('should match correct password (via handleAuth)', async () => {
-    const req = new Request('http://localhost/api/auth', {
+  it('should match correct password (via POST /api/auth)', async () => {
+    const res = await app.request('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: '123456' }),
-    });
-
-    const res = await handleAuth(req, mockEnv({ password: '123456', secret: TEST_SECRET }));
+    }, mockEnv({ password: '123456', secret: TEST_SECRET }));
     expect(res.status).toBe(200);
   });
 
   it('should NOT match wrong case', async () => {
-    const req = new Request('http://localhost/api/auth', {
+    const res = await app.request('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: '123456  ' }), // trailing spaces
-    });
-
-    const res = await handleAuth(req, mockEnv({ password: '123456', secret: TEST_SECRET }));
+    }, mockEnv({ password: '123456', secret: TEST_SECRET }));
     expect(res.status).toBe(401);
+  });
+});
+
+describe('protected routes (auth middleware)', () => {
+  it('should reject requests without auth header', async () => {
+    const res = await app.request('/api/emails', {}, mockEnv());
+    expect(res.status).toBe(401);
+    const body: { error?: string } = await res.json();
+    expect(body.error).toBe('Unauthorized');
+  });
+
+  it('should reject requests with invalid bearer token', async () => {
+    const res = await app.request('/api/emails', {
+      headers: { Authorization: 'Bearer invalid-token' },
+    }, mockEnv());
+    expect(res.status).toBe(401);
+    const body: { error?: string } = await res.json();
+    expect(body.error).toBe('Invalid or expired token');
+  });
+
+  it('should allow requests with valid token', async () => {
+    // First get a valid token
+    const authRes = await app.request('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: TEST_PASSWORD }),
+    }, mockEnv());
+    const { token } = await authRes.json() as { token: string };
+
+    // Use it to access protected route (will return empty list since DB is mock)
+    const res = await app.request('/api/emails', {
+      headers: { Authorization: `Bearer ${token}` },
+    }, mockEnv());
+    expect(res.status).toBe(200);
   });
 });

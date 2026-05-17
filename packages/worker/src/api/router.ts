@@ -1,77 +1,43 @@
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { createMiddleware } from 'hono/factory';
 import type { Env } from '../types';
 import { handleAuth, verifyToken } from './auth';
 import { handleListEmails, handleGetEmail, handleToggleRead } from './emails';
 
-function allowedOrigins(env: Env): string {
-  return env.ALLOWED_ORIGINS || '*';
-}
+type App = { Bindings: Env };
 
-function corsHeaders(env: Env): Record<string, string> {
-  return {
-    'Access-Control-Allow-Origin': allowedOrigins(env),
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  };
-}
-
-function corsResponse(response: Response, env: Env): Response {
-  const headers = corsHeaders(env);
-  for (const [k, v] of Object.entries(headers)) {
-    response.headers.set(k, v);
+const authMiddleware = createMiddleware<App>(async (c, next) => {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401);
   }
-  return response;
-}
-
-async function authenticate(request: Request, env: Env): Promise<Response | null> {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return corsResponse(Response.json({ error: 'Unauthorized' }, { status: 401 }), env);
-  }
-
-  const token = authHeader.slice(7);
-  const valid = await verifyToken(token, env.AUTH_SECRET);
+  const valid = await verifyToken(authHeader.slice(7), c.env.AUTH_SECRET);
   if (!valid) {
-    return corsResponse(Response.json({ error: 'Invalid or expired token' }, { status: 401 }), env);
+    return c.json({ error: 'Invalid or expired token' }, 401);
   }
+  await next();
+});
 
-  return null; // authenticated
-}
+const app = new Hono<App>();
 
-export async function handleRequest(request: Request, env: Env): Promise<Response> {
-  const url = new URL(request.url);
-  const path = url.pathname.replace(/\/+/g, '/');
-  const method = request.method;
+// CORS — applies to all /api/* paths including preflight
+app.use('/api/*', cors({
+  origin: (origin, c) => (c as unknown as { env: Env }).env.ALLOWED_ORIGINS || '*',
+  allowMethods: ['GET', 'POST', 'PUT', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+}));
 
-  // CORS preflight
-  if (method === 'OPTIONS') {
-    return corsResponse(new Response(null, { status: 204 }), env);
-  }
+// Public routes
+app.post('/api/auth', handleAuth);
 
-  // POST /api/auth
-  if (path === '/api/auth' && method === 'POST') {
-    return corsResponse(await handleAuth(request, env), env);
-  }
+// Protected routes
+app.get('/api/emails', authMiddleware, handleListEmails);
+app.get('/api/emails/:id', authMiddleware, handleGetEmail);
+app.put('/api/emails/:id/read', authMiddleware, handleToggleRead);
 
-  // Auth required for all other API routes
-  const authError = await authenticate(request, env);
-  if (authError) return authError;
+// 404
+app.notFound((c) => c.json({ error: 'Not found' }, 404));
 
-  // GET /api/emails
-  if (path === '/api/emails' && method === 'GET') {
-    return corsResponse(await handleListEmails(request, env), env);
-  }
-
-  // PUT /api/emails/:id/read  (must check BEFORE the id-only pattern)
-  const readMatch = path.match(/^\/api\/emails\/(\d+)\/read$/);
-  if (readMatch && method === 'PUT') {
-    return corsResponse(await handleToggleRead(parseInt(readMatch[1]), request, env), env);
-  }
-
-  // GET /api/emails/:id
-  const detailMatch = path.match(/^\/api\/emails\/(\d+)$/);
-  if (detailMatch && method === 'GET') {
-    return corsResponse(await handleGetEmail(parseInt(detailMatch[1]), env), env);
-  }
-
-  return corsResponse(Response.json({ error: 'Not found' }, { status: 404 }), env);
-}
+export { app };
+export default app;

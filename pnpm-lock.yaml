@@ -47,6 +47,9 @@ importers:
 
   packages/worker:
     dependencies:
+      hono:
+        specifier: ^4.12.18
+        version: 4.12.18
       postal-mime:
         specifier: ^2.4.0
         version: 2.7.4
@@ -1111,6 +1114,10 @@ packages:
   highlight.js@11.11.1:
     resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
     engines: {node: '>=12.0.0'}
+
+  hono@4.12.18:
+    resolution: {integrity: sha512-RWzP96k/yv0PQfyXnWjs6zot20TqfpfsNXhOnev8d1InAxubW93L11/oNUc3tQqn2G0bSdAOBpX+2uDFHV7kdQ==}
+    engines: {node: '>=16.9.0'}
 
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
@@ -2269,6 +2276,8 @@ snapshots:
   he@1.2.0: {}
 
   highlight.js@11.11.1: {}
+
+  hono@4.12.18: {}
 
   jiti@2.7.0: {}
 

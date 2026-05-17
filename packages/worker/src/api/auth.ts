@@ -1,4 +1,7 @@
+import type { Context } from 'hono';
 import type { Env } from '../types';
+
+type C = Context<{ Bindings: Env }>;
 
 function hex(buf: ArrayBuffer): string {
   return Array.from(new Uint8Array(buf))
@@ -69,23 +72,23 @@ function timingSafeStringEqual(a: string, b: string): boolean {
   return timingSafeEqual(bufA.buffer, bufB.buffer);
 }
 
-export async function handleAuth(request: Request, env: Env): Promise<Response> {
+export async function handleAuth(c: C): Promise<Response> {
   let body: Record<string, unknown>;
   try {
-    body = await request.json() as Record<string, unknown>;
+    body = await c.req.json() as Record<string, unknown>;
   } catch {
-    return Response.json({ error: 'Invalid request' }, { status: 400 });
+    return c.json({ error: 'Invalid request' }, 400);
   }
 
   if (typeof body.password !== 'string') {
-    return Response.json({ error: 'Invalid password' }, { status: 401 });
+    return c.json({ error: 'Invalid password' }, 401);
   }
 
-  if (!timingSafeStringEqual(body.password, env.AUTH_PASSWORD)) {
-    return Response.json({ error: 'Invalid password' }, { status: 401 });
+  if (!timingSafeStringEqual(body.password, c.env.AUTH_PASSWORD)) {
+    return c.json({ error: 'Invalid password' }, 401);
   }
 
-  const { token, expiresAt } = await generateToken(env.AUTH_SECRET);
+  const { token, expiresAt } = await generateToken(c.env.AUTH_SECRET);
 
-  return Response.json({ token, expiresAt });
+  return c.json({ token, expiresAt });
 }
