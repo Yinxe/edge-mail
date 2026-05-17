@@ -1,17 +1,13 @@
 <script setup lang="ts">
-import { ref, shallowRef, watch } from 'vue'
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useMessage, NModal, NCheckbox } from 'naive-ui'
+import { NModal, NCheckbox } from 'naive-ui'
 import { useEmails } from '../composables/useEmails'
-import { fetchEmailDetail } from '../api'
-import type { EmailDetail as EmailDetailType } from '../store'
 import EmailSidebar from '../components/EmailSidebar.vue'
 import EmailDetail from '../components/EmailDetail.vue'
-import EmailDrawer from '../components/EmailDrawer.vue'
 
 const route = useRoute()
 const router = useRouter()
-const message = useMessage()
 
 const {
   emails,
@@ -31,66 +27,17 @@ const pendingDeleteId = ref<number | null>(null)
 const showDeleteModal = ref(false)
 const dontAskAgain = ref(false)
 
-/* ── Drawer state (mobile) ── */
-const drawerVisible = ref(false)
-const drawerEmail = shallowRef<EmailDetailType | null>(null)
-const drawerLoading = ref(false)
+/* ── Desktop/mobile detection (matches AppLayout breakpoint) ── */
+const isDesktop = () => window.innerWidth >= 640
 
-const isMobile = () => window.innerWidth < 1024
-
-async function openDrawer(id: number) {
-  drawerVisible.value = true
-  drawerLoading.value = true
-  try {
-    const detail = await fetchEmailDetail(id)
-    drawerEmail.value = detail
-
-    // Optimistic read marking
-    const idx = emails.value.findIndex((e) => e.id === id)
-    if (idx !== -1 && !emails.value[idx].is_read) {
-      const updated = [...emails.value]
-      updated[idx] = { ...updated[idx], is_read: 1 }
-      emails.value = updated
-    }
-  } catch {
-    message.error('加载邮件详情失败')
-  } finally {
-    drawerLoading.value = false
-  }
-}
-
-function closeDrawer() {
-  drawerVisible.value = false
-  drawerEmail.value = null
-  // If on /inbox/:id via direct link, go back to list
-  if (isMobile() && route.params.id) {
-    router.push('/inbox')
-  }
-}
-
-/* ── Email selection: mobile → bottom drawer, desktop → inline content ── */
+/* ── Email selection: always route-based ── */
 function handleEmailSelect(id: number) {
-  if (isMobile()) {
-    openDrawer(id)
-  } else {
-    selectEmail(id)
-  }
+  selectEmail(id)
 }
 
-/* ── Handle direct nav to /inbox/:id on mobile ── */
-watch(
-  () => route.params.id,
-  (id) => {
-    if (id && typeof id === 'string' && isMobile()) {
-      openDrawer(parseInt(id))
-    }
-  },
-  { immediate: true },
-)
-
-async function deleteFromDrawer(id: number) {
-  closeDrawer()
-  await handleDelete(id)
+/* ── Back to list (mobile) ── */
+function goBackToList() {
+  router.push('/inbox')
 }
 
 /* ── Delete confirmation ── */
@@ -117,8 +64,8 @@ function confirmDelete() {
 </script>
 
 <template>
-  <div class="inbox-layout">
-    <!-- Email list (left on desktop, full on mobile) -->
+  <div class="inbox-layout" :class="{ 'inbox-layout--detail': !!route.params.id }">
+    <!-- Email list -->
     <div class="inbox__list">
       <EmailSidebar
         :emails="emails"
@@ -134,23 +81,25 @@ function confirmDelete() {
       />
     </div>
 
-    <!-- Content area (right on desktop, hidden on mobile) -->
+    <!-- Content area -->
     <div class="inbox__content">
+      <!-- Back button (mobile only, when detail is open) -->
+      <div v-if="!!route.params.id" class="inbox__back">
+        <button class="inbox__back-btn" @click="goBackToList">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          <span>返回</span>
+        </button>
+      </div>
+
       <EmailDetail
         :email="currentEmail"
         :loading="detailLoading"
         @delete="requestDelete"
       />
     </div>
-
-    <!-- Mobile bottom sheet drawer -->
-    <EmailDrawer
-      :email="drawerEmail"
-      :loading="drawerLoading"
-      :visible="drawerVisible"
-      @close="closeDrawer"
-      @delete="deleteFromDrawer"
-    />
 
     <!-- Delete confirmation modal -->
     <NModal v-model:show="showDeleteModal" preset="dialog" title="确认删除" positive-text="删除" negative-text="取消" @positive-click="confirmDelete" @negative-click="showDeleteModal = false">
@@ -167,6 +116,7 @@ function confirmDelete() {
   flex: 1;
   min-height: 0;
   background: #F8F6F7;
+  overflow-x: auto;
 }
 
 /* ── List area (left on desktop) ── */
@@ -180,21 +130,73 @@ function confirmDelete() {
 /* ── Content area (right on desktop) ── */
 .inbox__content {
   flex: 1;
-  min-width: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
-/* ── Mobile (< 1024px): list full width, content hidden, drawer handles detail ── */
-@media (max-width: 1023px) {
+
+
+/* ── Back button (mobile) ── */
+.inbox__back {
+  display: none;
+}
+
+/* ── Tablet (640-1023px): narrower list ── */
+@media (max-width: 1023px) and (min-width: 640px) {
+  .inbox__list {
+    width: 320px;
+  }
+}
+
+/* ── Mobile (< 640px): list/detail toggle via route ── */
+@media (max-width: 639px) {
   .inbox__list {
     width: 100%;
     border-right: none;
+    display: flex;
+    flex-direction: column;
   }
 
   .inbox__content {
-    display: none !important;
+    display: none;
+  }
+
+  .inbox-layout--detail .inbox__list {
+    display: none;
+  }
+
+  .inbox-layout--detail .inbox__content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .inbox__back {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #EAE5E8;
+    flex-shrink: 0;
+  }
+
+  .inbox__back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    color: #E85D75;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 150ms ease-out;
+  }
+  .inbox__back-btn:hover {
+    background: #FFF5F6;
   }
 }
 

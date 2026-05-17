@@ -6,7 +6,8 @@ import NavSidebar from '../components/NavSidebar.vue'
 const route = useRoute()
 const navOpen = ref(false)
 
-const pageKey = computed(() => route.path)
+// Use route name so /inbox ↔ /inbox/:id don't retrigger page transition
+const pageKey = computed(() => route.name ?? route.path)
 
 const isDesktop = ref(true)
 function updateBreakpoint() { isDesktop.value = window.innerWidth >= 1024 }

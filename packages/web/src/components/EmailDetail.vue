@@ -123,6 +123,7 @@ function formatFullDate(dateStr: string): string {
 .detail {
   flex: 1;
   overflow-y: auto;
+  overflow-x: auto;
   padding: 24px 32px;
   background: #F8F6F7;
 }
@@ -133,6 +134,8 @@ function formatFullDate(dateStr: string): string {
   padding: 20px 24px;
   margin-bottom: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  width: fit-content;
+  min-width: 100%;
 }
 
 .detail__subject {
@@ -172,59 +175,13 @@ function formatFullDate(dateStr: string): string {
 }
 
 .detail__body {
-  background: #FFFFFF;
-  border-radius: 12px;
-  padding: 20px 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.detail__html-body {
-  max-width: 100%;
-  font-size: 14px;
-  line-height: 1.7;
-  color: #2D2327;
-}
-
-.detail__html-body :deep(img) {
-  max-width: 100%;
-  height: auto;
-  border-radius: 6px;
-}
-
-.detail__html-body :deep(a) {
-  color: #E85D75;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.detail__html-body :deep(blockquote) {
-  border-left: 3px solid #EAE5E8;
-  margin: 12px 0;
-  padding: 4px 12px;
-  color: #6B5E63;
-}
-
-.detail__html-body :deep(table) {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.detail__html-body :deep(td),
-.detail__html-body :deep(th) {
-  border: 1px solid #EAE5E8;
-  padding: 6px 10px;
-  text-align: left;
+  width: fit-content;
+  min-width: 100%;
 }
 
 .detail__text-body {
-  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Noto Sans SC',
-    'PingFang SC', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
-  line-height: 1.7;
   white-space: pre-wrap;
-  word-wrap: break-word;
   margin: 0;
-  color: #2D2327;
 }
 
 .detail__no-body {
@@ -254,4 +211,5 @@ function formatFullDate(dateStr: string): string {
   justify-content: center;
   margin-bottom: 8px;
 }
+
 </style>
