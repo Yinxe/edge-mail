@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { app } from '../router';
-import { verifyToken } from '../auth';
+import { verifyToken } from '../../auth/service';
 
 const TEST_PASSWORD = '123456';
 const TEST_SECRET = 'test-secret-for-hmac';

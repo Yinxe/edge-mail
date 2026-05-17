@@ -1,6 +1,6 @@
 import PostalMime from 'postal-mime';
 import type { ForwardableEmailMessage } from '@cloudflare/workers-types';
-import type { Env } from './types';
+import type { Env } from '../shared/types';
 import { insertEmail } from './db';
 
 const HEADER_KEYS = [

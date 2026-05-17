@@ -1,5 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import { SETTINGS, type SettingsGroupName } from './registry';
+import { SETTINGS, type SettingsGroupName, type SettingDefinition } from './registry';
 
 /** 从 SETTINGS 推导每个 group 的返回值类型 */
 type SettingsValue<K extends SettingsGroupName> =
@@ -15,7 +15,7 @@ export async function getSettings<K extends SettingsGroupName>(
   db: D1Database,
   group: K,
 ): Promise<SettingsValue<K>> {
-  const def = SETTINGS[group];
+  const def = SETTINGS[group] as unknown as SettingDefinition<Record<string, unknown>>;
 
   try {
     const row = await db
@@ -23,18 +23,18 @@ export async function getSettings<K extends SettingsGroupName>(
       .bind(def.key)
       .first<{ value: string }>();
 
-    if (!row) return def.defaultValue;
+    if (!row) return def.defaultValue as unknown as SettingsValue<K>;
 
     const parsed = JSON.parse(row.value);
     // 确保 parsed 是对象，避免 string/number 等意外类型覆盖
     if (typeof parsed !== 'object' || parsed === null) {
-      return def.defaultValue;
+      return def.defaultValue as unknown as SettingsValue<K>;
     }
 
     // Spread 合并：DB 覆盖值中的字段替换默认值，缺失字段保留默认值
-    return { ...def.defaultValue, ...parsed } as SettingsValue<K>;
+    return { ...def.defaultValue, ...parsed } as unknown as SettingsValue<K>;
   } catch {
-    return def.defaultValue;
+    return def.defaultValue as unknown as SettingsValue<K>;
   }
 }
 
@@ -49,10 +49,10 @@ export async function setSettings<K extends SettingsGroupName>(
   group: K,
   value: Partial<SettingsValue<K>>,
 ): Promise<void> {
-  const def = SETTINGS[group];
+  const def = SETTINGS[group] as unknown as SettingDefinition<Record<string, unknown>>;
 
   const current = await getSettings(db, group);
-  const merged = { ...current, ...value };
+  const merged = { ...(current as unknown as Record<string, unknown>), ...(value as unknown as Record<string, unknown>) } as unknown as SettingsValue<K>;
   const json = JSON.stringify(merged);
 
   await db

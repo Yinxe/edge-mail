@@ -1,5 +1,5 @@
-import type { Env } from './types';
-import { handleEmail } from './email-handler';
+import type { Env } from './shared/types';
+import { handleEmail } from './emails/handler';
 import app from './api/router';
 
 // Workers runtime types conflict with lib types at the entry boundary;

@@ -40,7 +40,7 @@ async function getToken(): Promise<string> {
 }
 
 describe('GET /api/settings', () => {
-  it('should return all settings groups with defaults when no DB rows exist', async () => {
+  it('should return all settings groups with default values', async () => {
     const token = await getToken();
     const mockDB = createMockD1({ firstResult: null });
 
@@ -50,14 +50,15 @@ describe('GET /api/settings', () => {
 
     expect(res.status).toBe(200);
     const body = await res.json() as Record<string, unknown>;
-    expect(body).toHaveProperty('email');
-    expect(body.email).toEqual({ pageSize: 20, showPreview: true });
+    expect(body).toEqual({
+      domains: { domains: [] },
+    });
   });
 
   it('should return settings with DB overrides merged into defaults', async () => {
     const token = await getToken();
     const mockDB = createMockD1({
-      firstResult: { value: '{"pageSize":50}' },
+      firstResult: { value: '{"domains":["example.com"]}' },
     });
 
     const res = await app.request('/api/settings', {
@@ -65,9 +66,8 @@ describe('GET /api/settings', () => {
     }, mockEnv({ DB: mockDB }));
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { email: { pageSize: number; showPreview: boolean } };
-    expect(body.email.pageSize).toBe(50);
-    expect(body.email.showPreview).toBe(true); // default value preserved
+    const body = await res.json() as { domains: { domains: string[] } };
+    expect(body.domains.domains).toEqual(['example.com']);
   });
 
   it('should fall back to defaults when DB value has invalid JSON', async () => {
@@ -81,8 +81,8 @@ describe('GET /api/settings', () => {
     }, mockEnv({ DB: mockDB }));
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { email: { pageSize: number } };
-    expect(body.email).toEqual({ pageSize: 20, showPreview: true });
+    const body = await res.json() as { domains: { domains: string[] } };
+    expect(body.domains).toEqual({ domains: [] });
   });
 
   it('should reject without auth', async () => {
@@ -95,17 +95,16 @@ describe('GET /api/settings/:group', () => {
   it('should return settings for a valid group', async () => {
     const token = await getToken();
     const mockDB = createMockD1({
-      firstResult: { value: '{"pageSize":30}' },
+      firstResult: { value: '{"domains":["example.com","test.org"]}' },
     });
 
-    const res = await app.request('/api/settings/email', {
+    const res = await app.request('/api/settings/domains', {
       headers: { Authorization: `Bearer ${token}` },
     }, mockEnv({ DB: mockDB }));
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { pageSize: number; showPreview: boolean };
-    expect(body.pageSize).toBe(30);
-    expect(body.showPreview).toBe(true);
+    const body = await res.json() as { domains: string[] };
+    expect(body.domains).toEqual(['example.com', 'test.org']);
   });
 
   it('should return 404 for unknown group', async () => {
@@ -125,17 +124,17 @@ describe('PUT /api/settings/:group', () => {
   it('should update settings for a valid group', async () => {
     const token = await getToken();
     const mockDB = createMockD1({
-      firstResult: { value: '{"pageSize":20,"showPreview":true}' },
+      firstResult: { value: '{"domains":[]}' },
       runChanges: 1,
     });
 
-    const res = await app.request('/api/settings/email', {
+    const res = await app.request('/api/settings/domains', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ pageSize: 100 }),
+      body: JSON.stringify({ domains: ['example.com', 'test.org'] }),
     }, mockEnv({ DB: mockDB }));
 
     expect(res.status).toBe(200);
@@ -152,7 +151,7 @@ describe('PUT /api/settings/:group', () => {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ some: 'value' }),
+      body: JSON.stringify({ domains: ['evil.com'] }),
     }, mockEnv());
 
     expect(res.status).toBe(404);
@@ -162,15 +161,16 @@ describe('PUT /api/settings/:group', () => {
 
   it('should return 400 for invalid body', async () => {
     const token = await getToken();
+    const mockDB = createMockD1({ runChanges: 1 });
 
-    const res = await app.request('/api/settings/email', {
+    const res = await app.request('/api/settings/domains', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: 'not json',
-    }, mockEnv());
+    }, mockEnv({ DB: mockDB }));
 
     expect(res.status).toBe(400);
     const body = await res.json() as { error: string };
@@ -178,7 +178,7 @@ describe('PUT /api/settings/:group', () => {
   });
 
   it('should reject without auth', async () => {
-    const res = await app.request('/api/settings/email', {
+    const res = await app.request('/api/settings/domains', {
       method: 'PUT',
     }, mockEnv());
     expect(res.status).toBe(401);

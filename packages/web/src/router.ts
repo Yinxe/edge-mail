@@ -23,7 +23,7 @@ const router = createRouter({
           path: '/settings',
           name: 'settings',
           meta: { title: '设置' },
-          component: () => import('./views/TodoView.vue'),
+          component: () => import('./views/SettingsView.vue'),
         },
         {
           path: '/users',

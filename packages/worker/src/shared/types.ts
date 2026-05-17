@@ -1,3 +1,5 @@
+/* ── Email Domain Types ── */
+
 export interface EmailMeta {
   id: number;
   message_id: string;
@@ -21,16 +23,18 @@ export interface EmailDetail extends EmailMeta {
   headers: string | null;
 }
 
-export interface Env {
-  DB: D1Database;
-  AUTH_PASSWORD: string;
-  AUTH_SECRET: string;
-  ALLOWED_ORIGINS?: string;
-}
-
 export interface ListResult<T> {
   items: T[];
   total: number;
   page: number;
   limit: number;
+}
+
+/* ── Worker Environment ── */
+
+export interface Env {
+  DB: D1Database;
+  AUTH_PASSWORD: string;
+  AUTH_SECRET: string;
+  ALLOWED_ORIGINS?: string;
 }

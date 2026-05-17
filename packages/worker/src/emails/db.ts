@@ -1,5 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import type { EmailMeta, EmailDetail, ListResult } from './types';
+import type { EmailMeta, EmailDetail, ListResult } from '../shared/types';
 
 export interface InsertEmailParams {
   message_id: string;
@@ -70,8 +70,7 @@ export async function insertEmail(
   const emailId = insertResult.meta.last_row_id;
   if (emailId === undefined || emailId === null) return null;
 
-  // Use batch for atomic body insertion (single statement here, but batch pattern
-  // prevents partial failures and makes future multi-statement bodies safe)
+  // Use batch for atomic body insertion
   await db.batch([
     db.prepare(
       'INSERT INTO email_bodies (email_id, text_body, html_body, headers) VALUES (?, ?, ?, ?)'

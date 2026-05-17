@@ -1,10 +1,10 @@
 import type { Context } from 'hono';
-import type { Env } from '../types';
-import { listEmails, getEmailById, setEmailRead, searchEmails, deleteEmail } from '../db';
+import type { Env } from '../shared/types';
+import { listEmails, getEmailById, setEmailRead, searchEmails, deleteEmail } from './db';
 
 type C = Context<{ Bindings: Env }>;
 
-/** Parse and validate numeric ID from route param, returning 400 on invalid input */
+/** Parse and validate numeric ID from route param, returning null on invalid input */
 function parseId(c: C, param: string = 'id'): number | null {
   const id = parseInt(c.req.param(param) ?? '');
   if (isNaN(id) || id < 1) return null;

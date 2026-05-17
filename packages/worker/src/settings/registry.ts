@@ -1,14 +1,13 @@
 /**
  * Settings 注册表
  *
+ * 用于定义服务端重要配置组（如：是否允许新用户注册、定期清理邮件等）。
+ * 前端本地偏好（分页大小、主题等）请用 localStorage，勿注册在此。
+ *
  * 每个配置组：
  * - key: D1 中的主键
  * - defaultValue: 类型安全的默认值（接口定义字段类型）
  * - description: 可读描述
- *
- * 使用方式：
- *   const emailCfg = await getSettings(db, 'email');
- *   // emailCfg.pageSize: number, emailCfg.showPreview: boolean
  *
  * 加新配置组只需三步：
  *   1. 定义接口（如 XxxSettings）
@@ -24,18 +23,18 @@ export interface SettingDefinition<T extends Record<string, unknown>> {
 
 // ========== 设置组类型定义 ==========
 
-export interface EmailSettings {
-  pageSize: number;
-  showPreview: boolean;
+/** 邮箱域名配置：系统接受的域名列表 */
+export interface DomainSettings {
+  domains: string[];
 }
 
 // ========== 注册表 ==========
 
 export const SETTINGS = {
-  email: {
-    key: 'email',
-    defaultValue: { pageSize: 20, showPreview: true } as EmailSettings,
-    description: '邮件相关设置（每页数量、预览开关）',
+  domains: {
+    key: 'domains',
+    defaultValue: { domains: [] } as DomainSettings,
+    description: '邮箱域名配置（收件时校验域名合法性）',
   },
 } as const;
 

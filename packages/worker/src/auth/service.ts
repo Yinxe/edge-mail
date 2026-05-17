@@ -1,7 +1,10 @@
-import type { Context } from 'hono';
-import type { Env } from '../types';
-
-type C = Context<{ Bindings: Env }>;
+/**
+ * HMAC-SHA256 认证服务（纯业务逻辑，无 Hono 依赖）
+ *
+ * Token 格式: <expiresAt>.<hexSignature>
+ * - expiresAt: 过期时间戳（毫秒）
+ * - hexSignature: HMAC-SHA256 签名
+ */
 
 function hex(buf: ArrayBuffer): string {
   return Array.from(new Uint8Array(buf))
@@ -9,7 +12,7 @@ function hex(buf: ArrayBuffer): string {
     .join('');
 }
 
-/** Constant-time byte-level comparison (no Web Crypto dependency) */
+/** Constant-time byte-level comparison */
 function timingSafeEqual(a: ArrayBufferLike, b: ArrayBufferLike): boolean {
   if (a.byteLength !== b.byteLength) return false;
   const ua = new Uint8Array(a);
@@ -40,7 +43,14 @@ async function signPayload(secret: string, data: string): Promise<ArrayBuffer> {
   return crypto.subtle.sign('HMAC', key, encoder.encode(data));
 }
 
-async function generateToken(secret: string): Promise<{ token: string; expiresAt: number }> {
+export function timingSafeStringEqual(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+  return timingSafeEqual(bufA.buffer, bufB.buffer);
+}
+
+export async function generateToken(secret: string): Promise<{ token: string; expiresAt: number }> {
   const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24h
   const sig = await signPayload(secret, expiresAt.toString());
   return { token: `${expiresAt}.${hex(sig)}`, expiresAt };
@@ -56,39 +66,10 @@ export async function verifyToken(token: string, secret: string): Promise<boolea
 
   const expectedSig = await signPayload(secret, expiresStr);
 
-  // Timing-safe comparison via Web Crypto API
   const expectedBytes = new Uint8Array(expectedSig);
   const actualBytes = hexToBytes(sigHex);
   if (!actualBytes) return false;
   if (expectedBytes.byteLength !== actualBytes.byteLength) return false;
 
   return timingSafeEqual(expectedBytes.buffer, actualBytes.buffer);
-}
-
-function timingSafeStringEqual(a: string, b: string): boolean {
-  const encoder = new TextEncoder();
-  const bufA = encoder.encode(a);
-  const bufB = encoder.encode(b);
-  return timingSafeEqual(bufA.buffer, bufB.buffer);
-}
-
-export async function handleAuth(c: C): Promise<Response> {
-  let body: Record<string, unknown>;
-  try {
-    body = await c.req.json() as Record<string, unknown>;
-  } catch {
-    return c.json({ error: 'Invalid request' }, 400);
-  }
-
-  if (typeof body.password !== 'string') {
-    return c.json({ error: 'Invalid password' }, 401);
-  }
-
-  if (!timingSafeStringEqual(body.password, c.env.AUTH_PASSWORD)) {
-    return c.json({ error: 'Invalid password' }, 401);
-  }
-
-  const { token, expiresAt } = await generateToken(c.env.AUTH_SECRET);
-
-  return c.json({ token, expiresAt });
 }

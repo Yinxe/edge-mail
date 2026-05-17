@@ -1,24 +1,11 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { createMiddleware } from 'hono/factory';
-import type { Env } from '../types';
-import { handleAuth, verifyToken } from './auth';
-import { handleListEmails, handleGetEmail, handleToggleRead, handleDeleteEmail } from './emails';
+import type { Env } from '../shared/types';
+import { handleAuth, authMiddleware } from '../auth/api';
+import { handleListEmails, handleGetEmail, handleToggleRead, handleDeleteEmail } from '../emails/api';
 import { handleGetAllSettings, handleGetSettings, handleUpdateSettings } from '../settings/api';
 
 type App = { Bindings: Env };
-
-const authMiddleware = createMiddleware<App>(async (c, next) => {
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized' }, 401);
-  }
-  const valid = await verifyToken(authHeader.slice(7), c.env.AUTH_SECRET);
-  if (!valid) {
-    return c.json({ error: 'Invalid or expired token' }, 401);
-  }
-  await next();
-});
 
 const app = new Hono<App>();
 

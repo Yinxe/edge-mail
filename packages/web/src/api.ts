@@ -54,3 +54,20 @@ export async function deleteEmail(id: number): Promise<void> {
   })
   if (!res.ok) throw new Error('Failed to delete email')
 }
+
+/* ── Settings ── */
+
+export async function fetchSettings(): Promise<Record<string, unknown>> {
+  const res = await fetch(`${BASE}/api/settings`, { headers: authHeaders() })
+  if (!res.ok) throw new Error('Failed to fetch settings')
+  return res.json()
+}
+
+export async function updateSettings(group: string, data: unknown): Promise<void> {
+  const res = await fetch(`${BASE}/api/settings/${group}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error('Failed to update settings')
+}

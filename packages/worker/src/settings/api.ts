@@ -1,5 +1,5 @@
 import type { Context } from 'hono';
-import type { Env } from '../types';
+import type { Env } from '../shared/types';
 import { SETTINGS } from './registry';
 import { getSettings, setSettings, getAllSettings } from './db';
 
@@ -18,7 +18,8 @@ export async function handleGetSettings(c: C): Promise<Response> {
     return c.json({ error: `Unknown settings group: ${group}` }, 404);
   }
 
-  const result = await getSettings(c.env.DB, group as keyof typeof SETTINGS);
+  // group in SETTINGS 已在运行时保证 group 有效，类型上通过 as 绕过
+  const result = await getSettings(c.env.DB, group as never);
   return c.json(result);
 }
 
@@ -34,6 +35,6 @@ export async function handleUpdateSettings(c: C): Promise<Response> {
     return c.json({ error: 'Invalid request body' }, 400);
   }
 
-  await setSettings(c.env.DB, group as keyof typeof SETTINGS, body);
+  await setSettings(c.env.DB, group as never, body as never);
   return c.json({ ok: true });
 }
