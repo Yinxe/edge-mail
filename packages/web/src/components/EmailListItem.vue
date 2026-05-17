@@ -88,7 +88,11 @@ function onMenuOverlayClick() {
 
 // Touch events
 function onTouchStart(e: TouchEvent) { startDrag(e.touches[0].clientX, e.touches[0].clientY) }
-function onTouchMove(e: TouchEvent) { moveDrag(e.touches[0].clientX) }
+function onTouchMove(e: TouchEvent) {
+  moveDrag(e.touches[0].clientX)
+  // Only prevent default when dragging horizontally — preserves scroll + tap
+  if (isDragging) e.preventDefault()
+}
 function onTouchEnd() { endDrag() }
 
 // Mouse drag
@@ -110,7 +114,7 @@ onUnmounted(() => window.removeEventListener('click', onWindowClick))
 <template>
   <div
     class="email-item-wrapper"
-    @touchstart.prevent="onTouchStart"
+    @touchstart="onTouchStart"
     @touchmove="onTouchMove"
     @touchend="onTouchEnd"
     @mousedown="onMouseDown"
