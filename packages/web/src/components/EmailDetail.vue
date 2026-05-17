@@ -66,73 +66,54 @@ function formatFullDate(dateStr: string): string {
           <h2 class="detail__subject">{{ email.subject }}</h2>
         </div>
 
-        <!-- Meta info grid: sender / recipient cards -->
-        <div class="detail__meta-grid">
-          <button
-            class="detail__meta-card"
-            @click="copy(email.sender, '发件人地址')"
-            title="点击复制发件人地址"
-          >
-            <span class="detail__meta-card-label">发件人</span>
-            <div class="detail__meta-card-value-row">
-              <span class="detail__meta-card-value">{{ email.sender }}</span>
+        <!-- Meta: label-value rows with copy -->
+        <div class="detail__meta">
+          <div class="detail__meta-row">
+            <span class="detail__label">发件人</span>
+            <button
+              class="detail__value detail__value--copyable"
+              @click="copy(email.sender, '发件人地址')"
+              title="点击复制"
+            >
+              <span class="detail__value-text">{{ email.sender }}</span>
               <svg
-                class="detail__copy-icon"
-                width="14" height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                class="detail__copy-icon" width="13" height="13"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
               >
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                 <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
               </svg>
-            </div>
-          </button>
-
-          <button
-            class="detail__meta-card"
-            @click="copy(email.recipient, '收件人地址')"
-            title="点击复制收件人地址"
-          >
-            <span class="detail__meta-card-label">收件人</span>
-            <div class="detail__meta-card-value-row">
-              <span class="detail__meta-card-value">{{ email.recipient }}</span>
+            </button>
+          </div>
+          <div class="detail__meta-row">
+            <span class="detail__label">收件人</span>
+            <button
+              class="detail__value detail__value--copyable"
+              @click="copy(email.recipient, '收件人地址')"
+              title="点击复制"
+            >
+              <span class="detail__value-text">{{ email.recipient }}</span>
               <svg
-                class="detail__copy-icon"
-                width="14" height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                class="detail__copy-icon" width="13" height="13"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
               >
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                 <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
               </svg>
-            </div>
-          </button>
-        </div>
-
-        <!-- Time row -->
-        <div class="detail__time-row">
-          <svg
-            class="detail__time-icon"
-            width="14" height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-          <span>{{ formatFullDate(email.created_at) }}</span>
+            </button>
+          </div>
+          <div class="detail__meta-row">
+            <span class="detail__label">时间</span>
+            <span class="detail__value">
+              <svg class="detail__time-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              {{ formatFullDate(email.created_at) }}
+            </span>
+          </div>
         </div>
 
         <!-- Bottom divider + tags + actions -->
@@ -271,7 +252,7 @@ function formatFullDate(dateStr: string): string {
 .detail__header {
   background: #FFFFFF;
   border-radius: 12px;
-  padding: 20px 24px 16px;
+  padding: 20px 24px;
   margin-bottom: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   width: fit-content;
@@ -283,7 +264,7 @@ function formatFullDate(dateStr: string): string {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .detail__status-dot {
@@ -293,78 +274,83 @@ function formatFullDate(dateStr: string): string {
   margin-top: 3px;
   border-radius: 2px;
   background: #D0C8CC;
-  transition: background var(--anim-micro-duration) var(--anim-micro-easing);
+  transition: background 150ms ease-out;
 }
 
 .detail__status-dot--unread {
-  background: var(--naive-primary-color, #E85D75);
+  background: #E85D75;
 }
 
 .detail__subject {
   font-size: 20px;
   font-weight: 700;
-  color: var(--naive-text-color-1, #2D2327);
+  color: #2D2327;
   margin: 0;
   line-height: 1.4;
   word-break: break-word;
   overflow-wrap: break-word;
 }
 
-/* ── Meta grid ── */
-.detail__meta-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.detail__meta-card {
+/* ── Meta: label-value rows ── */
+.detail__meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  background: #F8F6F7;
-  border: 1px solid #EAE5E8;
-  border-radius: 10px;
-  padding: 10px 14px;
-  cursor: pointer;
-  transition: all var(--anim-micro-duration) var(--anim-micro-easing);
-  text-align: left;
-  font-family: inherit;
-  font-size: inherit;
-  width: 100%;
-  min-width: 0;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
-.detail__meta-card:hover {
-  background: #FFF5F6;
-  border-color: #E85D75;
-  box-shadow: 0 2px 8px rgba(232, 93, 117, 0.1);
-}
-
-.detail__meta-card:active {
-  background: #FDE8EB;
-  transform: scale(0.98);
-}
-
-.detail__meta-card-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #9E9196;
-}
-
-.detail__meta-card-value-row {
+.detail__meta-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  min-width: 0;
+  gap: 12px;
+  min-height: 36px;
 }
 
-.detail__meta-card-value {
+.detail__label {
+  flex-shrink: 0;
+  width: 52px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9E9196;
+  letter-spacing: 0.03em;
+}
+
+.detail__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 14px;
   color: #2D2327;
   font-weight: 500;
+  background: #F8F6F7;
+  padding: 5px 12px;
+  border-radius: 8px;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid transparent;
+  transition: all 150ms ease-out;
+}
+
+.detail__value--copyable {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  border-color: #EAE5E8;
+}
+
+.detail__value--copyable:hover {
+  background: #FFF5F6;
+  border-color: #E85D75;
+  color: #E85D75;
+}
+
+.detail__value--copyable:active {
+  background: #FDE8EB;
+  transform: scale(0.97);
+}
+
+.detail__value-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -373,26 +359,16 @@ function formatFullDate(dateStr: string): string {
 .detail__copy-icon {
   flex-shrink: 0;
   color: #D0C8CC;
-  transition: color var(--anim-micro-duration) var(--anim-micro-easing);
+  transition: color 150ms ease-out;
 }
 
-.detail__meta-card:hover .detail__copy-icon {
+.detail__value--copyable:hover .detail__copy-icon {
   color: #E85D75;
-}
-
-/* ── Time row ── */
-.detail__time-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #6B5E63;
-  margin-bottom: 16px;
 }
 
 .detail__time-icon {
   flex-shrink: 0;
-  color: #D0C8CC;
+  color: #9E9196;
 }
 
 /* ── Footer (tags + actions) ── */
@@ -500,13 +476,18 @@ function formatFullDate(dateStr: string): string {
     font-size: 17px;
   }
 
-  .detail__meta-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
+  .detail__meta-row {
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: auto;
   }
 
-  .detail__meta-card {
-    padding: 8px 12px;
+  .detail__label {
+    width: auto;
+  }
+
+  .detail__value {
+    max-width: 100%;
   }
 
   .detail__toolbar {
