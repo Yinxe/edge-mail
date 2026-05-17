@@ -1,7 +1,7 @@
 import { shallowRef, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
-import { fetchEmails, fetchEmailDetail, toggleEmailRead } from '../api'
+import { fetchEmails, fetchEmailDetail, toggleEmailRead, deleteEmail } from '../api'
 import type { EmailMeta, EmailDetail } from '../store'
 
 export function useEmails() {
@@ -15,16 +15,17 @@ export function useEmails() {
   const total = shallowRef(0)
   const loading = shallowRef(false)
   const detailLoading = shallowRef(false)
+  const searchQuery = ref('')
   const limit = 20
 
   async function loadEmails() {
     loading.value = true
     try {
-      const result = await fetchEmails(page.value)
+      const result = await fetchEmails(page.value, searchQuery.value || undefined)
       emails.value = result.items
       total.value = result.total
     } catch {
-      message.error('加载邮件失败')
+      message.error(searchQuery.value ? '搜索失败' : '加载邮件失败')
     } finally {
       loading.value = false
     }
@@ -57,6 +58,31 @@ export function useEmails() {
     page.value = newPage
   }
 
+  function handleSearch(query: string) {
+    searchQuery.value = query
+    page.value = 1
+    // watch(page) will trigger loadEmails
+  }
+
+  async function handleDelete(id: number) {
+    try {
+      await deleteEmail(id)
+      message.success('邮件已删除')
+      // Clear detail view if the deleted email was being viewed
+      if (currentEmail.value?.id === id) {
+        currentEmail.value = null
+        router.replace('/inbox')
+      }
+      // Reload — if the page becomes empty, step back
+      await loadEmails()
+      if (emails.value.length === 0 && page.value > 1) {
+        page.value--
+      }
+    } catch {
+      message.error('删除失败')
+    }
+  }
+
   // Load emails on mount and on page change
   onMounted(loadEmails)
   watch(page, loadEmails)
@@ -82,7 +108,10 @@ export function useEmails() {
     limit,
     loading,
     detailLoading,
+    searchQuery,
     selectEmail,
     handlePageChange,
+    handleSearch,
+    handleDelete,
   }
 }
