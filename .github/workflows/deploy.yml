@@ -14,13 +14,8 @@ name: Deploy
 # 【Variables 标签 → New repository variable】
 #   D1_DATABASE_ID         — D1 UUID (npx wrangler d1 create edge-mail-db 获取)
 #   VITE_API_BASE          — Worker URL (如 https://edge-mail-worker.xxx.workers.dev)
-#   EMAIL_DOMAIN           — 根域名，如 yourdomain.com (⚠ Cloudflare Dashboard 手动先启用 Email Routing)
-#   EMAIL_SCOPE            — 路由范围 (可选，见 .github/scripts/configure-email-routing.sh)
 #
 # ⚠ 不要用 Environment secrets/variables，用 Repository 级别
-#
-# 以及 Dashboard 操作：
-#   Email Routing 规则: *@yourdomain.com → edge-mail-worker
 #
 # === 工作流触发后自动执行 ===
 #     Worker: D1 迁移 → 部署 Worker → 注入 Secrets
@@ -52,16 +47,7 @@ jobs:
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
           VITE_API_BASE: ${{ vars.VITE_API_BASE }}
-          EMAIL_DOMAIN: ${{ vars.EMAIL_DOMAIN }}
         run: .github/scripts/validate.sh
-
-      - name: Configure Email Routing
-        run: .github/scripts/configure-email-routing.sh
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          EMAIL_DOMAIN: ${{ vars.EMAIL_DOMAIN }}
-          EMAIL_SCOPE: ${{ vars.EMAIL_SCOPE }}
 
   deploy-worker:
     if: inputs.deploy-worker

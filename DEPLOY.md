@@ -107,11 +107,13 @@ npx wrangler login
 
 ### 2.2 开通 Email Routing
 
-```bash
-npx wrangler email routing enable yourdomain.com
-```
+在 [Cloudflare Dashboard → Email Routing](https://dash.cloudflare.com/) 中：
 
-> 替换 `yourdomain.com` 为你的实际域名。
+1. 选择你的域名（如 `codex.yoga`）
+2. 点击 **Get started**
+3. 按提示完成开通，Cloudflare 会自动添加 SPF/DKIM DNS 记录
+
+> 只需做一次，后续部署不需要重复配置。
 
 ### 2.3 创建 D1 数据库
 
@@ -168,13 +170,12 @@ Deployed edge-mail-worker (id: edge-mail-worker)
 
 在 [Cloudflare Dashboard → Email Routing → Routing Rules](https://dash.cloudflare.com/) 中添加规则：
 
-- **Custom address**: `*` (或 `*@yourdomain.com`)
-- **Action**: Send to Worker → 选择 `edge-mail-worker`
+1. 点击 **Create rule**
+2. **Custom address**: `*`（捕获所有该域名的邮件）
+3. **Action**: Send to Worker → 选择 `edge-mail-worker`
+4. 保存
 
-也可以用 CLI：
-```bash
-npx wrangler email routing rules create yourdomain.com --action=worker --destination=edge-mail-worker
-```
+> 确保该域名已开通 Email Routing（见 2.2 节），否则这里不会显示该域名。
 
 ### 2.8 部署前端
 
@@ -237,12 +238,15 @@ npx wrangler pages deploy dist --project-name=edge-mail-web
 ### 3.2 一次性前置操作
 
 ```bash
-# 1. 创建 Cloudflare Pages 项目（仅第一次）
+# 创建 Cloudflare Pages 项目（仅第一次）
 npx wrangler pages project create edge-mail-web --production-branch=master
-
-# 2. 在 Dashboard 配置 Email Routing 规则
-#    *@yourdomain.com → edge-mail-worker
 ```
+
+**在 Cloudflare Dashboard 中：**
+1. 开通 Email Routing（见 2.2 节）
+2. 配置路由规则 `* → edge-mail-worker`（见 2.7 节）
+
+这些只需做一次，后续 CI 流程直接复用。
 
 ### 3.3 触发部署
 
