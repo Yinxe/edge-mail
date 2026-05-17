@@ -1,81 +1,23 @@
-# edge-mail — AGENTS.md
+# edge-mail — 项目概览
 
-## Architecture
+Monorepo（`pnpm workspace`），两个包：`packages/worker`（Cloudflare Worker）和 `packages/web`（Vue 3 SPA）。
 
-Monorepo (`pnpm workspace`), two packages:
+## Worker
 
-- **`packages/worker`** — Cloudflare Worker with dual entry: `email()` handles inbound mail via Email Routing, `fetch()` serves REST API (`packages/worker/src/index.ts`). Uses `postal-mime` for MIME parsing, `D1` (binding name `DB`) for storage, HMAC-SHA256 for auth.
-- **`packages/web`** — Vue 3 SPA (Naive UI + TailwindCSS v4). No tests.
+Hono + D1 + postal-mime + HMAC 认证。双入口：`email()` 处理入站邮件，`fetch()` 提供 REST API。
 
-## Local dev
+## Web
 
-```bash
-# Terminal 1
-pnpm dev:worker     # → http://localhost:8787
-# Terminal 2
-pnpm dev:web        # → http://localhost:5173 (Vite proxies /api to :8787)
-```
+Vue 3 Composition API + Naive UI + TailwindCSS v4。Vite 代理 `/api` 到 Worker（:8787）。
 
-Worker local secrets: `packages/worker/.dev.vars` (`AUTH_PASSWORD`, `AUTH_SECRET`). Not committed (in `.gitignore`).
+## 关键注意事项（编辑前必读）
 
-Web local config: `packages/web/.env`. Leave `VITE_API_BASE=` empty for dev (Vite proxy handles it).
+- **`wrangler.jsonc` 是 JSONC 格式**：支持 `//` 注释。`database_id` 是 CI 占位符，本地 deploy 会失败。
+- **Worker 入口用 `any` 类型转换**：有意为之，运行时类型与 DOM 类型冲突。
+- **HMAC 认证是自实现**：无 JWT 依赖。Token 格式：`<过期时间戳>.<hex签名>`。
+- **邮件去重**：依赖 SQL `UNIQUE( message_id )`，`insertEmail` 重复时返回 `null`。
+- **pnpm `allowBuilds`**：允许 esbuild、sharp、workerd 原生构建。
 
-Local D1 setup (first time or schema reset):
-```bash
-pnpm --filter worker db:local
-```
+---
 
-## Testing
-
-Worker only (Vitest):
-```bash
-pnpm --filter worker test          # vitest run
-pnpm --filter worker test -- --watch
-```
-
-Tests live in `packages/worker/src/api/__tests__/`. Environment: `node` (no miniflare). Worker handler types use `any` at the boundary due to runtime/lib type conflicts.
-
-## TypeScript
-
-```bash
-pnpm --filter worker tsc --noEmit  # Worker typecheck
-pnpm --filter web build            # Web: vue-tsc -b + vite build (typecheck + bundle)
-```
-
-Both packages extend `tsconfig.base.json` from root. Worker uses `@cloudflare/workers-types`.
-
-## CI/CD (GitHub Actions)
-
-File: `.github/workflows/deploy.yml`. Triggers on push to `master` or manual dispatch.
-
-**`validate` job** (runs first) — checks 4 secrets + 2 variables are set. Fails fast if missing.
-
-**`deploy-worker`** → `validate`:
-1. CI injects `database_id` into `wrangler.jsonc` (Node.js script, not sed — resilient to placeholder changes)
-2. D1 migrations run
-3. `wrangler deploy`
-4. Secrets injected via `wrangler secret put`
-
-**`deploy-web`** → `deploy-worker`:
-1. `vite build` with `VITE_API_BASE` from vars
-2. `wrangler pages deploy`
-
-Required GitHub Secrets (Repository level, not Environment):
-- `CLOUDFLARE_API_TOKEN` (Workers + D1 + Pages + Email Routing)
-- `CLOUDFLARE_ACCOUNT_ID`
-- `AUTH_PASSWORD`
-- `AUTH_SECRET`
-
-Required GitHub Variables:
-- `D1_DATABASE_ID`
-- `VITE_API_BASE`
-
-## Key gotchas
-
-- **`wrangler.jsonc` is JSONC**: supports `//` comments. Node.js injection script strips them before `JSON.parse`.
-- **`database_id` in `wrangler.jsonc` is a CI placeholder**. Local `wrangler deploy` will fail with the placeholder value. Run CI or manually replace with a real D1 UUID.
-- **Worker entry uses `any` casts** at the `email()` / `fetch()` boundary. This is intentional — the Workers runtime types conflict with browser/lib DOM types.
-- **HMAC auth is custom** (no JWT library). Uses `crypto.subtle.sign('HMAC', ...)` with a pure-JS constant-time compare (`timingSafeEqual`). Token format: `<expiry-ms>.<hex-signature>`.
-- **Email de-duplication** relies on SQL `UNIQUE` constraint on `message_id`. `insertEmail` returns `null` on duplicate.
-- **`wrangler pages project create`** in CI uses `|| true` to suppress "already exists" error. The subsequent deploy step catches real failures.
-- **pnpm `allowBuilds`** in root `pnpm-workspace.yaml` allows `esbuild`, `sharp`, `workerd` — required for native build hooks.
+> 详细规则按领域拆分在 `.opencode/rules/` 下，通过 `opencode.jsonc` 的 `instructions` 自动加载。

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // === 指令引导 ===
+  // 每次对话自动加载这些文件到 system prompt
+  // AGENTS.md 作为简洁总览，.opencode/rules/ 下的文件按领域拆分详细规则
+  "instructions": [
+    "AGENTS.md",
+    "DESIGN.md",
+    "CHANGELOG.md",
+    ".opencode/rules/architecture.md",
+    ".opencode/rules/local-dev.md",
+    ".opencode/rules/testing.md",
+    ".opencode/rules/ci-cd.md"
+  ],
+
+  // === 技能路径 ===
+  // 注册项目自定义技能，AI 在相关场景下会自动加载
+  "skills": {
+    "paths": [".opencode/skills"]
+  }
+}

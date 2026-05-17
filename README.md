@@ -1,18 +1,38 @@
-# edge-mail 部署文档
+# edge-mail
 
-基于 Cloudflare Email Routing + Workers + D1 + Pages 的域名信箱系统部署指南。
+基于 Cloudflare Email Routing + Workers + D1 + Pages 的域名信箱系统。
 
-## 架构
+**技术栈：** [Hono](https://hono.dev) · [Cloudflare Workers](https://workers.cloudflare.com) · [D1](https://developers.cloudflare.com/d1) · [Vue 3](https://vuejs.org) · [Naive UI](https://www.naiveui.com) · [TailwindCSS v4](https://tailwindcss.com) · [postal-mime](https://github.com/postal-mime) · [Vitest](https://vitest.dev)
 
-```
+```text
 外部邮件 → Cloudflare Email Routing (*@domain.com)
                 ↓
-         Worker (email handler + HTTP API)
+         Worker (Hono: email handler + REST API)
                 ↓
          D1 数据库 (emails + email_bodies)
                 ↑
          Cloudflare Pages (Vue 3 SPA)
 ```
+
+## 快速开始
+
+```bash
+git clone <repo>
+cd edge-mail
+pnpm install
+
+# 终端 1 — Worker
+pnpm dev:worker    # → http://localhost:8787
+
+# 终端 2 — Web
+pnpm dev:web       # → http://localhost:5173（Vite 代理 /api 到 :8787）
+```
+
+首次使用先初始化本地 D1：`pnpm --filter worker db:local`
+
+---
+
+## 部署指南
 
 ## 前置条件
 
