@@ -14,7 +14,7 @@ name: Deploy
 # 【Variables 标签 → New repository variable】
 #   D1_DATABASE_ID         — D1 UUID (npx wrangler d1 create edge-mail-db 获取)
 #   VITE_API_BASE          — Worker URL (如 https://edge-mail-worker.xxx.workers.dev)
-#   EMAIL_DOMAIN           — 根域名，如 yourdomain.com (CI 自动启用 Email Routing)
+#   EMAIL_DOMAIN           — 根域名，如 yourdomain.com (⚠ Cloudflare Dashboard 手动先启用 Email Routing)
 #   EMAIL_SCOPE            — 路由范围 (可选，见 .github/scripts/configure-email-routing.sh)
 #
 # ⚠ 不要用 Environment secrets/variables，用 Repository 级别

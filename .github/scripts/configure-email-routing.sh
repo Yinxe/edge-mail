@@ -6,16 +6,7 @@ SCOPE="${EMAIL_SCOPE:-}"
 API_URL="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/email/routing/rules"
 AUTH="-H Authorization: Bearer $CLOUDFLARE_API_TOKEN"
 
-# 1. Enable Email Routing for the zone
-echo "🔍 Checking Email Routing status for $DOMAIN..."
-if npx wrangler email routing dns get "$DOMAIN" > /dev/null 2>&1; then
-  echo "✅ Email Routing already enabled"
-else
-  echo "🔧 Enabling Email Routing for $DOMAIN..."
-  npx wrangler email routing enable "$DOMAIN"
-fi
-
-# 2. Determine matcher
+# Determine matcher based on scope
 if [ -z "$SCOPE" ]; then
   # Default: root domain only
   MATCHER='{"type":"email","field":"to","value":"*@'"$DOMAIN"'"}'
@@ -30,7 +21,7 @@ else
   echo "📧 Scope: $SCOPE"
 fi
 
-# 3. Check if a routing rule to edge-mail-worker already exists
+# Check if a routing rule to edge-mail-worker already exists
 echo "🔍 Checking routing rules..."
 RULE_EXISTS=$(curl -s "$API_URL" $AUTH | \
   jq -e '[.result[] | select(.actions[0].value[0] == "edge-mail-worker" and .enabled == true)] | length > 0')
