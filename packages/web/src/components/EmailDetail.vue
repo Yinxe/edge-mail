@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import DOMPurify from 'dompurify'
 import { NTag, NText, NEmpty, NSpin, NButton, NButtonGroup } from 'naive-ui'
 import type { EmailDetail } from '../store'
+import { htmlToText } from '../utils/htmlToText'
 
 const props = defineProps<{
   email: EmailDetail | null
@@ -24,16 +25,8 @@ const safeHtmlBody = computed(() =>
   props.email?.html_body ? DOMPurify.sanitize(props.email.html_body) : '',
 )
 
-/** Extracted plain text from HTML (for text mode when no text_body) */
-const extractedText = computed(() => {
-  if (!props.email?.html_body) return ''
-  const div = document.createElement('div')
-  div.innerHTML = props.email.html_body
-  return div.textContent || ''
-})
-
 const effectiveTextBody = computed(() =>
-  props.email?.text_body ?? extractedText.value,
+  props.email?.text_body ?? (props.email?.html_body ? htmlToText(props.email.html_body) : ''),
 )
 
 const hasHtml = computed(() => !!props.email?.html_body)
