@@ -4,6 +4,7 @@ import DOMPurify from 'dompurify'
 import { NTag, NText, NEmpty, NSpin, NButton, NButtonGroup } from 'naive-ui'
 import type { EmailDetail } from '../store'
 import { htmlToText } from '../utils/htmlToText'
+import { useCopy } from '../composables/useCopy'
 
 const props = defineProps<{
   email: EmailDetail | null
@@ -15,6 +16,8 @@ const emit = defineEmits<{
   delete: [id: number]
   toggleFullscreen: []
 }>()
+
+const { copy } = useCopy()
 
 // ── View mode: "html" or "text" ──
 const viewMode = ref<'html' | 'text'>('html')
@@ -52,43 +55,106 @@ function formatFullDate(dateStr: string): string {
 
     <!-- Email content -->
     <template v-else-if="email">
+      <!-- ── Header card ── -->
       <div class="detail__header">
-        <h2 class="detail__subject">{{ email.subject }}</h2>
-
-        <div class="detail__meta">
-          <div class="detail__meta-row">
-            <NText depth="3" class="detail__label">发件人</NText>
-            <NText class="detail__value">{{ email.sender }}</NText>
-          </div>
-          <div class="detail__meta-row">
-            <NText depth="3" class="detail__label">收件人</NText>
-            <NText class="detail__value">{{ email.recipient }}</NText>
-          </div>
-          <div class="detail__meta-row">
-            <NText depth="3" class="detail__label">时间</NText>
-            <NText class="detail__value">{{ formatFullDate(email.created_at) }}</NText>
-          </div>
+        <!-- Subject with status indicator -->
+        <div class="detail__subject-row">
+          <div
+            class="detail__status-dot"
+            :class="{ 'detail__status-dot--unread': !email.is_read }"
+          />
+          <h2 class="detail__subject">{{ email.subject }}</h2>
         </div>
 
-        <div class="detail__tags">
-          <NTag
-            :type="email.is_read ? 'default' : 'info'"
-            size="small"
-            :bordered="false"
+        <!-- Meta info grid: sender / recipient cards -->
+        <div class="detail__meta-grid">
+          <button
+            class="detail__meta-card"
+            @click="copy(email.sender, '发件人地址')"
+            title="点击复制发件人地址"
           >
-            {{ email.is_read ? '已读' : '未读' }}
-          </NTag>
-          <NTag
-            v-if="!email.is_read"
-            type="warning"
-            size="small"
-            :bordered="false"
+            <span class="detail__meta-card-label">发件人</span>
+            <div class="detail__meta-card-value-row">
+              <span class="detail__meta-card-value">{{ email.sender }}</span>
+              <svg
+                class="detail__copy-icon"
+                width="14" height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+              </svg>
+            </div>
+          </button>
+
+          <button
+            class="detail__meta-card"
+            @click="copy(email.recipient, '收件人地址')"
+            title="点击复制收件人地址"
           >
-            新邮件
-          </NTag>
+            <span class="detail__meta-card-label">收件人</span>
+            <div class="detail__meta-card-value-row">
+              <span class="detail__meta-card-value">{{ email.recipient }}</span>
+              <svg
+                class="detail__copy-icon"
+                width="14" height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+              </svg>
+            </div>
+          </button>
         </div>
 
-        <div class="detail__actions">
+        <!-- Time row -->
+        <div class="detail__time-row">
+          <svg
+            class="detail__time-icon"
+            width="14" height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span>{{ formatFullDate(email.created_at) }}</span>
+        </div>
+
+        <!-- Bottom divider + tags + actions -->
+        <div class="detail__footer">
+          <div class="detail__tags">
+            <NTag
+              :type="email.is_read ? 'success' : 'info'"
+              size="small"
+              :bordered="false"
+            >
+              {{ email.is_read ? '已读' : '未读' }}
+            </NTag>
+            <NTag
+              v-if="!email.is_read"
+              type="warning"
+              size="small"
+              :bordered="false"
+            >
+              新邮件
+            </NTag>
+          </div>
+
           <NButton
             type="error"
             size="small"
@@ -106,7 +172,7 @@ function formatFullDate(dateStr: string): string {
         </div>
       </div>
 
-      <!-- Toolbar: view mode toggle + fullscreen -->
+      <!-- ── Toolbar ── -->
       <div class="detail__toolbar">
         <NButtonGroup size="tiny" class="detail__view-toggle">
           <NButton
@@ -138,7 +204,6 @@ function formatFullDate(dateStr: string): string {
               fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
             >
-              <!-- fullscreen enter / exit based on state -->
               <template v-if="fullscreen">
                 <polyline points="4 14 10 14 10 20" />
                 <polyline points="20 10 14 10 14 4" />
@@ -157,7 +222,7 @@ function formatFullDate(dateStr: string): string {
         </NButton>
       </div>
 
-      <!-- Body content -->
+      <!-- ── Body content ── -->
       <div class="detail__body">
         <!-- HTML mode -->
         <div v-if="viewMode === 'html' && hasHtml" v-html="safeHtmlBody" class="detail__html-body" />
@@ -202,58 +267,146 @@ function formatFullDate(dateStr: string): string {
   padding: 24px 48px;
 }
 
+/* ── Header Card ── */
 .detail__header {
   background: #FFFFFF;
   border-radius: 12px;
-  padding: 20px 24px;
+  padding: 20px 24px 16px;
   margin-bottom: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   width: fit-content;
   min-width: 100%;
 }
 
-.detail__subject {
-  font-size: 18px;
-  font-weight: 700;
-  color: #2D2327;
-  margin: 0 0 16px 0;
-  line-height: 1.4;
+/* ── Subject ── */
+.detail__subject-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.detail__meta {
+.detail__status-dot {
+  flex-shrink: 0;
+  width: 4px;
+  height: 28px;
+  margin-top: 3px;
+  border-radius: 2px;
+  background: #D0C8CC;
+  transition: background var(--anim-micro-duration) var(--anim-micro-easing);
+}
+
+.detail__status-dot--unread {
+  background: var(--naive-primary-color, #E85D75);
+}
+
+.detail__subject {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--naive-text-color-1, #2D2327);
+  margin: 0;
+  line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ── Meta grid ── */
+.detail__meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.detail__meta-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  background: #F8F6F7;
+  border: 1px solid #EAE5E8;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all var(--anim-micro-duration) var(--anim-micro-easing);
+  text-align: left;
+  font-family: inherit;
+  font-size: inherit;
+  width: 100%;
+  min-width: 0;
 }
 
-.detail__meta-row {
+.detail__meta-card:hover {
+  background: #FFF5F6;
+  border-color: #E85D75;
+  box-shadow: 0 2px 8px rgba(232, 93, 117, 0.1);
+}
+
+.detail__meta-card:active {
+  background: #FDE8EB;
+  transform: scale(0.98);
+}
+
+.detail__meta-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9E9196;
+}
+
+.detail__meta-card-value-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
+}
+
+.detail__meta-card-value {
   font-size: 14px;
-}
-
-.detail__label {
-  flex-shrink: 0;
-  min-width: 48px;
-}
-
-.detail__value {
   color: #2D2327;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail__copy-icon {
+  flex-shrink: 0;
+  color: #D0C8CC;
+  transition: color var(--anim-micro-duration) var(--anim-micro-easing);
+}
+
+.detail__meta-card:hover .detail__copy-icon {
+  color: #E85D75;
+}
+
+/* ── Time row ── */
+.detail__time-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #6B5E63;
+  margin-bottom: 16px;
+}
+
+.detail__time-icon {
+  flex-shrink: 0;
+  color: #D0C8CC;
+}
+
+/* ── Footer (tags + actions) ── */
+.detail__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid #EAE5E8;
 }
 
 .detail__tags {
   display: flex;
   gap: 8px;
-  margin-top: 12px;
-}
-
-.detail__actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #EAE5E8;
 }
 
 /* ── Toolbar ── */
@@ -322,5 +475,50 @@ function formatFullDate(dateStr: string): string {
   display: flex;
   justify-content: center;
   margin-bottom: 8px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .detail {
+    padding: 16px;
+  }
+
+  .detail--fullscreen {
+    padding: 16px;
+  }
+
+  .detail__header {
+    padding: 16px;
+  }
+
+  .detail__subject-row {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .detail__subject {
+    font-size: 17px;
+  }
+
+  .detail__meta-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .detail__meta-card {
+    padding: 8px 12px;
+  }
+
+  .detail__toolbar {
+    padding: 6px 10px;
+  }
+
+  .detail__html-body {
+    padding: 16px;
+  }
+
+  .detail__text-body {
+    padding: 16px;
+  }
 }
 </style>
