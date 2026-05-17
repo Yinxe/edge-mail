@@ -19,3 +19,8 @@ CREATE TABLE IF NOT EXISTS email_bodies (
 
 CREATE INDEX IF NOT EXISTS idx_emails_recipient ON emails(recipient, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_emails_message_id ON emails(message_id);
+
+CREATE TABLE IF NOT EXISTS settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);

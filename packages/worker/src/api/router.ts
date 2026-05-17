@@ -4,6 +4,7 @@ import { createMiddleware } from 'hono/factory';
 import type { Env } from '../types';
 import { handleAuth, verifyToken } from './auth';
 import { handleListEmails, handleGetEmail, handleToggleRead, handleDeleteEmail } from './emails';
+import { handleGetAllSettings, handleGetSettings, handleUpdateSettings } from '../settings/api';
 
 type App = { Bindings: Env };
 
@@ -36,6 +37,11 @@ app.get('/api/emails', authMiddleware, handleListEmails);
 app.get('/api/emails/:id', authMiddleware, handleGetEmail);
 app.put('/api/emails/:id/read', authMiddleware, handleToggleRead);
 app.delete('/api/emails/:id', authMiddleware, handleDeleteEmail);
+
+// Settings routes (protected)
+app.get('/api/settings', authMiddleware, handleGetAllSettings);
+app.get('/api/settings/:group', authMiddleware, handleGetSettings);
+app.put('/api/settings/:group', authMiddleware, handleUpdateSettings);
 
 // 404
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
