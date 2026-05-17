@@ -205,3 +205,108 @@ describe('DELETE /api/emails/:id', () => {
     expect(body.error).toBe('Invalid email ID');
   });
 });
+
+describe('GET /api/emails/:id', () => {
+  it('should return email detail for existing email', async () => {
+    const token = await getToken();
+    const mockEmail = {
+      id: 1,
+      message_id: 'm1',
+      sender: 'a@b.com',
+      recipient: 'x@y.com',
+      subject: 'Hello',
+      raw_size: 100,
+      is_read: 0,
+      created_at: '2026-01-01T00:00:00.000Z',
+      text_body: 'Hello world',
+      html_body: null,
+      headers: '{"from":"a@b.com"}',
+    };
+    const mockDB = createMockD1({
+      firstResult: mockEmail,
+      runChanges: 1, // for the UPDATE marking as read
+    });
+
+    const res = await app.request('/api/emails/1', {
+      headers: { Authorization: `Bearer ${token}` },
+    }, mockEnv({ DB: mockDB }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as Record<string, unknown>;
+    expect(body.id).toBe(1);
+    expect(body.sender).toBe('a@b.com');
+    expect(body.subject).toBe('Hello');
+    expect(body.text_body).toBe('Hello world');
+  });
+
+  it('should return 404 for non-existent email', async () => {
+    const token = await getToken();
+    // Default mock returns firstResult: null and runChanges: 0
+    const res = await app.request('/api/emails/999', {
+      headers: { Authorization: `Bearer ${token}` },
+    }, mockEnv());
+
+    expect(res.status).toBe(404);
+    const body = await res.json() as { error: string };
+    expect(body.error).toBe('Email not found');
+  });
+
+  it('should reject without auth', async () => {
+    const res = await app.request('/api/emails/1', {}, mockEnv());
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('PUT /api/emails/:id/read', () => {
+  it('should mark email as read', async () => {
+    const token = await getToken();
+    const mockDB = createMockD1({ runChanges: 1 });
+
+    const res = await app.request('/api/emails/1/read', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ is_read: true }),
+    }, mockEnv({ DB: mockDB }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { ok: boolean };
+    expect(body.ok).toBe(true);
+  });
+
+  it('should return 404 for non-existent email', async () => {
+    const token = await getToken();
+    const mockDB = createMockD1({ runChanges: 0 });
+
+    const res = await app.request('/api/emails/999/read', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ is_read: true }),
+    }, mockEnv({ DB: mockDB }));
+
+    expect(res.status).toBe(404);
+    const body = await res.json() as { error: string };
+    expect(body.error).toBe('Email not found');
+  });
+
+  it('should default to marking as read when body is empty', async () => {
+    const token = await getToken();
+    const mockDB = createMockD1({ runChanges: 1 });
+
+    const res = await app.request('/api/emails/1/read', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      // No body — handler defaults to is_read = true
+    }, mockEnv({ DB: mockDB }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { ok: boolean };
+    expect(body.ok).toBe(true);
+  });
+
+  it('should reject without auth', async () => {
+    const res = await app.request('/api/emails/1/read', {
+      method: 'PUT',
+    }, mockEnv());
+    expect(res.status).toBe(401);
+  });
+});
