@@ -107,6 +107,29 @@ describe('GET /api/emails — search', () => {
     expect(body.items).toHaveLength(0);
     expect(body.total).toBe(0);
   });
+
+  it('should fall through to listEmails when q is empty string', async () => {
+    const token = await getToken();
+    // Mock with data to verify listEmails is called (not searchEmails)
+    const mockDB = createMockD1({
+      firstResult: { total: 1 },
+      allResults: {
+        results: [
+          { id: 1, message_id: 'm1', sender: 'a@b.com', recipient: 'x@y.com', subject: 'Hello', raw_size: 100, is_read: 0, created_at: '2026-01-01' },
+        ],
+        success: true,
+      },
+    });
+
+    const res = await app.request('/api/emails?q=', {
+      headers: { Authorization: `Bearer ${token}` },
+    }, mockEnv({ DB: mockDB }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { items: unknown[]; total: number };
+    expect(body.items).toHaveLength(1);
+    expect(body.total).toBe(1);
+  });
 });
 
 describe('DELETE /api/emails/:id', () => {
@@ -152,6 +175,30 @@ describe('DELETE /api/emails/:id', () => {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     }, mockEnv());  // DB won't be touched since validation happens before DB call
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: string };
+    expect(body.error).toBe('Invalid email ID');
+  });
+
+  it('should return 400 for id 0', async () => {
+    const token = await getToken();
+    const res = await app.request('/api/emails/0', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }, mockEnv());
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: string };
+    expect(body.error).toBe('Invalid email ID');
+  });
+
+  it('should return 400 for negative id', async () => {
+    const token = await getToken();
+    const res = await app.request('/api/emails/-1', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }, mockEnv());
 
     expect(res.status).toBe(400);
     const body = await res.json() as { error: string };
