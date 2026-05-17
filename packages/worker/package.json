@@ -8,8 +8,7 @@
     "db:local": "wrangler d1 execute edge-mail-db --local --file=schema.sql",
     "types": "wrangler types",
     "test": "vitest run",
-    "db:export:local": "bash scripts/db-export.sh local",
-    "db:export:remote": "bash scripts/db-export.sh remote"
+    "db:export": "bash scripts/db-export.sh"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250415.0",

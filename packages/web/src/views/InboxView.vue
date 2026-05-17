@@ -29,6 +29,11 @@ const {
 const pendingDeleteId = ref<number | null>(null)
 const showDeleteModal = ref(false)
 const dontAskAgain = ref(false)
+const isFullscreen = ref(false)
+
+function toggleFullscreen() {
+  isFullscreen.value = !isFullscreen.value
+}
 
 /* ── Desktop/mobile detection (matches AppLayout breakpoint) ── */
 const isDesktop = () => window.innerWidth >= 640
@@ -67,7 +72,7 @@ function confirmDelete() {
 </script>
 
 <template>
-  <div class="inbox-layout" :class="{ 'inbox-layout--detail': !!route.params.id }">
+  <div class="inbox-layout" :class="{ 'inbox-layout--detail': !!route.params.id, 'inbox-layout--fullscreen': isFullscreen }">
     <!-- Email list -->
     <div class="inbox__list">
       <EmailSidebar
@@ -103,7 +108,9 @@ function confirmDelete() {
       <EmailDetail
         :email="currentEmail"
         :loading="detailLoading"
+        :fullscreen="isFullscreen"
         @delete="requestDelete"
+        @toggle-fullscreen="toggleFullscreen"
       />
     </div>
 
@@ -142,6 +149,15 @@ function confirmDelete() {
 }
 
 
+
+/* ── Fullscreen: hide sidebar, content takes full width ── */
+.inbox-layout--fullscreen .inbox__list {
+  display: none;
+}
+
+.inbox-layout--fullscreen .inbox__content {
+  flex: 1;
+}
 
 /* ── Back button (mobile) ── */
 .inbox__back {

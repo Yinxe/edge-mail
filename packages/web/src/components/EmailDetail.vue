@@ -1,21 +1,43 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import DOMPurify from 'dompurify'
-import { NTag, NText, NEmpty, NSpin, NButton } from 'naive-ui'
+import { NTag, NText, NEmpty, NSpin, NButton, NButtonGroup } from 'naive-ui'
 import type { EmailDetail } from '../store'
 
 const props = defineProps<{
   email: EmailDetail | null
   loading?: boolean
+  fullscreen?: boolean
 }>()
+
+const emit = defineEmits<{
+  delete: [id: number]
+  toggleFullscreen: []
+}>()
+
+// ── View mode: "html" or "text" ──
+const viewMode = ref<'html' | 'text'>('html')
+
+// ── Derived ──
 
 const safeHtmlBody = computed(() =>
   props.email?.html_body ? DOMPurify.sanitize(props.email.html_body) : '',
 )
 
-const emit = defineEmits<{
-  delete: [id: number]
-}>()
+/** Extracted plain text from HTML (for text mode when no text_body) */
+const extractedText = computed(() => {
+  if (!props.email?.html_body) return ''
+  const div = document.createElement('div')
+  div.innerHTML = props.email.html_body
+  return div.textContent || ''
+})
+
+const effectiveTextBody = computed(() =>
+  props.email?.text_body ?? extractedText.value,
+)
+
+const hasHtml = computed(() => !!props.email?.html_body)
+const hasTextFallback = computed(() => !!effectiveTextBody.value)
 
 function formatFullDate(dateStr: string): string {
   return new Date(dateStr + 'Z').toLocaleString('zh-CN', {
@@ -29,7 +51,7 @@ function formatFullDate(dateStr: string): string {
 </script>
 
 <template>
-  <section class="detail">
+  <section class="detail" :class="{ 'detail--fullscreen': fullscreen }">
     <!-- Loading state -->
     <div v-if="loading" class="detail__empty">
       <NSpin size="small" />
@@ -91,12 +113,66 @@ function formatFullDate(dateStr: string): string {
         </div>
       </div>
 
+      <!-- Toolbar: view mode toggle + fullscreen -->
+      <div class="detail__toolbar">
+        <NButtonGroup size="tiny" class="detail__view-toggle">
+          <NButton
+            :type="viewMode === 'html' ? 'primary' : 'default'"
+            :disabled="!hasHtml"
+            @click="viewMode = 'html'"
+          >
+            HTML
+          </NButton>
+          <NButton
+            :type="viewMode === 'text' ? 'primary' : 'default'"
+            :disabled="!hasTextFallback"
+            @click="viewMode = 'text'"
+          >
+            纯文本
+          </NButton>
+        </NButtonGroup>
+
+        <NButton
+          size="tiny"
+          tertiary
+          :type="fullscreen ? 'primary' : 'default'"
+          class="detail__fullscreen-btn"
+          @click="emit('toggleFullscreen')"
+        >
+          <template #icon>
+            <svg
+              width="14" height="14" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            >
+              <!-- fullscreen enter / exit based on state -->
+              <template v-if="fullscreen">
+                <polyline points="4 14 10 14 10 20" />
+                <polyline points="20 10 14 10 14 4" />
+                <line x1="14" y1="10" x2="21" y2="3" />
+                <line x1="3" y1="21" x2="10" y2="14" />
+              </template>
+              <template v-else>
+                <polyline points="15 3 21 3 21 9" />
+                <polyline points="9 21 3 21 3 15" />
+                <line x1="21" y1="3" x2="14" y2="10" />
+                <line x1="3" y1="21" x2="10" y2="14" />
+              </template>
+            </svg>
+          </template>
+          {{ fullscreen ? '退出全屏' : '全屏' }}
+        </NButton>
+      </div>
+
+      <!-- Body content -->
       <div class="detail__body">
-        <!-- HTML body (sanitized) -->
-        <div v-if="email.html_body" v-html="safeHtmlBody" class="detail__html-body" />
-        <!-- Plain text body -->
-        <pre v-else-if="email.text_body" class="detail__text-body">{{ email.text_body }}</pre>
-        <!-- Empty body -->
+        <!-- HTML mode -->
+        <div v-if="viewMode === 'html' && hasHtml" v-html="safeHtmlBody" class="detail__html-body" />
+        <!-- Text mode -->
+        <pre v-else-if="viewMode === 'text' && effectiveTextBody" class="detail__text-body">{{ effectiveTextBody }}</pre>
+        <!-- HTML mode, no HTML body → fallback to text -->
+        <pre v-else-if="viewMode === 'html' && !hasHtml && effectiveTextBody" class="detail__text-body">{{ effectiveTextBody }}</pre>
+        <!-- No content -->
         <NText v-else depth="3" class="detail__no-body">（无正文内容）</NText>
       </div>
     </template>
@@ -126,6 +202,11 @@ function formatFullDate(dateStr: string): string {
   overflow-x: auto;
   padding: 24px 32px;
   background: #F8F6F7;
+  transition: padding var(--anim-duration-normal) var(--anim-easing-smooth);
+}
+
+.detail--fullscreen {
+  padding: 24px 48px;
 }
 
 .detail__header {
@@ -174,28 +255,66 @@ function formatFullDate(dateStr: string): string {
   margin-top: 12px;
 }
 
-.detail__body {
-  width: fit-content;
-  min-width: 100%;
-}
-
-.detail__text-body {
-  white-space: pre-wrap;
-  margin: 0;
-}
-
-.detail__no-body {
-  display: block;
-  text-align: center;
-  padding: 32px 0;
-}
-
 .detail__actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #EAE5E8;
+}
+
+/* ── Toolbar ── */
+.detail__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  width: fit-content;
+  min-width: 100%;
+}
+
+.detail__view-toggle {
+  flex-shrink: 0;
+}
+
+.detail__fullscreen-btn {
+  flex-shrink: 0;
+}
+
+/* ── Body ── */
+.detail__body {
+  width: fit-content;
+  min-width: 100%;
+}
+
+.detail__html-body {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px 32px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.detail__text-body {
+  white-space: pre-wrap;
+  margin: 0;
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  font-family: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #2D2327;
+}
+
+.detail__no-body {
+  display: block;
+  text-align: center;
+  padding: 32px 0;
 }
 
 .detail__empty {
@@ -211,5 +330,4 @@ function formatFullDate(dateStr: string): string {
   justify-content: center;
   margin-bottom: 8px;
 }
-
 </style>
