@@ -49,9 +49,31 @@ jobs:
           VITE_API_BASE: ${{ vars.VITE_API_BASE }}
         run: .github/scripts/validate.sh
 
+  test:
+    if: inputs.deploy-worker || inputs.deploy-web
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - run: pnpm install
+
+      - name: Run worker tests
+        working-directory: packages/worker
+        run: npx vitest run
+
   deploy-worker:
     if: inputs.deploy-worker
-    needs: validate
+    needs: [validate, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -97,7 +119,7 @@ jobs:
 
   deploy-web:
     if: inputs.deploy-web
-    needs: validate
+    needs: [validate, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
