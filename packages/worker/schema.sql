@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS emails (
 
 CREATE TABLE IF NOT EXISTS email_bodies (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
-  email_id  INTEGER NOT NULL UNIQUE REFERENCES emails(id),
+  email_id  INTEGER NOT NULL UNIQUE REFERENCES emails(id) ON DELETE CASCADE,
   text_body TEXT,
   html_body TEXT,
   headers   TEXT

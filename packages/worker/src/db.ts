@@ -92,3 +92,38 @@ export async function setEmailRead(
   ).bind(isRead ? 1 : 0, id).run();
   return (result.meta.changes ?? 0) > 0;
 }
+
+/** Search emails by sender or subject (LIKE, paginated) */
+export async function searchEmails(
+  db: D1Database,
+  q: string,
+  page: number,
+  limit: number,
+): Promise<ListResult<EmailMeta>> {
+  const offset = (page - 1) * limit;
+
+  // Escape LIKE wildcards so user input is matched literally
+  const escaped = q.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+  const pattern = `%${escaped}%`;
+
+  const countResult = await db.prepare(
+    "SELECT COUNT(*) as total FROM emails WHERE sender LIKE ? ESCAPE '\\' OR subject LIKE ? ESCAPE '\\'"
+  ).bind(pattern, pattern).first<{ total: number }>();
+  const total = countResult?.total ?? 0;
+
+  const { results } = await db.prepare(
+    "SELECT id, message_id, sender, recipient, subject, raw_size, is_read, created_at FROM emails WHERE sender LIKE ? ESCAPE '\\' OR subject LIKE ? ESCAPE '\\' ORDER BY created_at DESC LIMIT ? OFFSET ?"
+  ).bind(pattern, pattern, limit, offset).all<EmailMeta>();
+
+  return { items: results, total, page, limit };
+}
+
+/** Delete an email and its body (via ON DELETE CASCADE) */
+export async function deleteEmail(
+  db: D1Database,
+  id: number,
+): Promise<boolean> {
+  const result = await db.prepare('DELETE FROM emails WHERE id = ?').bind(id).run();
+  // TODO: 删除关联的附件资源（当附件存储功能实现时）
+  return (result.meta.changes ?? 0) > 0;
+}
