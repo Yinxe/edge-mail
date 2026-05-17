@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import DOMPurify from 'dompurify'
-import { NTag, NText, NEmpty, NSpin } from 'naive-ui'
+import { NTag, NText, NEmpty, NSpin, NButton } from 'naive-ui'
 import type { EmailDetail } from '../store'
 
 const props = defineProps<{
@@ -12,6 +12,10 @@ const props = defineProps<{
 const safeHtmlBody = computed(() =>
   props.email?.html_body ? DOMPurify.sanitize(props.email.html_body) : '',
 )
+
+const emit = defineEmits<{
+  delete: [id: number]
+}>()
 
 function formatFullDate(dateStr: string): string {
   return new Date(dateStr + 'Z').toLocaleString('zh-CN', {
@@ -67,6 +71,23 @@ function formatFullDate(dateStr: string): string {
           >
             新邮件
           </NTag>
+        </div>
+
+        <div class="detail__actions">
+          <NButton
+            type="error"
+            size="small"
+            tertiary
+            @click="emit('delete', email.id)"
+          >
+            <template #icon>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
+            </template>
+            删除
+          </NButton>
         </div>
       </div>
 
@@ -210,6 +231,14 @@ function formatFullDate(dateStr: string): string {
   display: block;
   text-align: center;
   padding: 32px 0;
+}
+
+.detail__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #EAE5E8;
 }
 
 .detail__empty {
