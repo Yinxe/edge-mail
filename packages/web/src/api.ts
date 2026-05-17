@@ -20,8 +20,10 @@ export async function login(password: string): Promise<{ token: string; expiresA
   return res.json()
 }
 
-export async function fetchEmails(page: number): Promise<ListResult<EmailMeta>> {
-  const res = await fetch(`${BASE}/api/emails?page=${page}&limit=20`, {
+export async function fetchEmails(page: number, q?: string): Promise<ListResult<EmailMeta>> {
+  const params = new URLSearchParams({ page: String(page), limit: '20' })
+  if (q) params.set('q', q)
+  const res = await fetch(`${BASE}/api/emails?${params}`, {
     headers: authHeaders(),
   })
   if (!res.ok) throw new Error('Failed to fetch emails')
@@ -43,4 +45,12 @@ export async function toggleEmailRead(id: number, isRead: boolean): Promise<void
     body: JSON.stringify({ is_read: isRead }),
   })
   if (!res.ok) throw new Error('Failed to toggle read status')
+}
+
+export async function deleteEmail(id: number): Promise<void> {
+  const res = await fetch(`${BASE}/api/emails/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to delete email')
 }
