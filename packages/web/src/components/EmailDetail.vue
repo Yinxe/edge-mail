@@ -68,50 +68,38 @@ function formatFullDate(dateStr: string): string {
 
         <!-- Meta: tag-value rows with copy -->
         <div class="detail__meta">
-          <div class="detail__meta-row">
-            <NTag size="tiny" :bordered="false" type="default">ID</NTag>
-            <span class="detail__value">{{ email.message_id }}</span>
+          <div class="detail__meta-pill">
+            <span class="detail__pill-label detail__pill-label--default">ID</span>
+            <span class="detail__pill-value">{{ email.message_id }}</span>
           </div>
-          <div class="detail__meta-row">
-            <NTag size="tiny" :bordered="false" type="info">FROM</NTag>
-            <button
-              class="detail__value detail__value--copyable"
-              @click="copy(email.sender, '发件人地址')"
-              title="点击复制"
-            >
-              <span class="detail__value-text">{{ email.sender }}</span>
-              <svg
-                class="detail__copy-icon" width="13" height="13"
-                viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              >
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-              </svg>
-            </button>
-          </div>
-          <div class="detail__meta-row">
-            <NTag size="tiny" :bordered="false" type="warning">TO</NTag>
-            <button
-              class="detail__value detail__value--copyable"
-              @click="copy(email.recipient, '收件人地址')"
-              title="点击复制"
-            >
-              <span class="detail__value-text">{{ email.recipient }}</span>
-              <svg
-                class="detail__copy-icon" width="13" height="13"
-                viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              >
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-              </svg>
-            </button>
-          </div>
-          <div class="detail__meta-row">
-            <NTag size="tiny" :bordered="false" type="default">Time</NTag>
-            <span class="detail__value">
-              <svg class="detail__time-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <button
+            class="detail__meta-pill detail__meta-pill--action"
+            @click="copy(email.sender, '发件人地址')"
+            title="点击复制"
+          >
+            <span class="detail__pill-label detail__pill-label--info">FROM</span>
+            <span class="detail__pill-value detail__pill-value--copyable">{{ email.sender }}</span>
+            <svg class="detail__copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+          </button>
+          <button
+            class="detail__meta-pill detail__meta-pill--action"
+            @click="copy(email.recipient, '收件人地址')"
+            title="点击复制"
+          >
+            <span class="detail__pill-label detail__pill-label--warning">TO</span>
+            <span class="detail__pill-value detail__pill-value--copyable">{{ email.recipient }}</span>
+            <svg class="detail__copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+          </button>
+          <div class="detail__meta-pill">
+            <span class="detail__pill-label detail__pill-label--default">Time</span>
+            <span class="detail__pill-value">
+              <svg class="detail__pill-time-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
@@ -295,7 +283,7 @@ function formatFullDate(dateStr: string): string {
   overflow-wrap: break-word;
 }
 
-/* ── Meta: tag-value rows ── */
+/* ── Meta: pill rows (label + value enclosed) ── */
 .detail__meta {
   display: flex;
   flex-direction: column;
@@ -303,54 +291,83 @@ function formatFullDate(dateStr: string): string {
   margin-bottom: 16px;
 }
 
-.detail__meta-row {
-  display: flex;
+.detail__meta-pill {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 32px;
+  background: #F5F3F4;
+  border-radius: 8px;
+  border: 1px solid #EAE5E8;
+  min-width: 0;
+  width: fit-content;
+  max-width: 100%;
+  transition: all 150ms ease-out;
 }
 
-.detail__value {
+.detail__meta-pill--action {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  padding: 0;
+  border-color: #E3DDE0;
+}
+
+.detail__meta-pill--action:hover {
+  background: #FFF5F6;
+  border-color: #E85D75;
+}
+
+.detail__meta-pill--action:active {
+  background: #FDE8EB;
+  transform: scale(0.98);
+}
+
+.detail__pill-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 5px 10px;
+  border-radius: 7px 0 0 7px;
+  background: #E8E4E6;
+  color: #6B5E63;
+}
+
+.detail__pill-label--info {
+  background: #E5F0FA;
+  color: #4A9FE5;
+}
+
+.detail__pill-label--warning {
+  background: #FEF0DB;
+  color: #F5A623;
+}
+
+.detail__pill-label--default {
+  background: #E8E4E6;
+  color: #6B5E63;
+}
+
+.detail__pill-value {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #2D2327;
   font-weight: 500;
-  background: #F8F6F7;
-  padding: 4px 10px;
-  border-radius: 6px;
+  color: #2D2327;
+  padding: 5px 12px;
   min-width: 0;
-  max-width: 100%;
-  border: 1px solid transparent;
-  transition: all 150ms ease-out;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.detail__value--copyable {
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 13px;
-  text-align: left;
-  border-color: #EAE5E8;
-}
-
-.detail__value--copyable:hover {
-  background: #FFF5F6;
-  border-color: #E85D75;
-  color: #E85D75;
-}
-
-.detail__value--copyable:active {
-  background: #FDE8EB;
-  transform: scale(0.97);
-}
-
-.detail__value-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.detail__pill-value--copyable {
+  cursor: pointer;
+}
+
+.detail__meta-pill--action:hover .detail__pill-value {
+  color: #E85D75;
 }
 
 .detail__copy-icon {
@@ -359,11 +376,11 @@ function formatFullDate(dateStr: string): string {
   transition: color 150ms ease-out;
 }
 
-.detail__value--copyable:hover .detail__copy-icon {
+.detail__meta-pill--action:hover .detail__copy-icon {
   color: #E85D75;
 }
 
-.detail__time-icon {
+.detail__pill-time-icon {
   flex-shrink: 0;
   color: #9E9196;
 }
@@ -473,13 +490,7 @@ function formatFullDate(dateStr: string): string {
     font-size: 17px;
   }
 
-  .detail__meta-row {
-    flex-wrap: wrap;
-    gap: 6px;
-    min-height: auto;
-  }
-
-  .detail__value {
+  .detail__meta-pill {
     max-width: 100%;
   }
 
