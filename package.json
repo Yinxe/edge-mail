@@ -1,5 +1,6 @@
 {
   "name": "edge-mail",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "dev:worker": "pnpm --filter worker dev",
