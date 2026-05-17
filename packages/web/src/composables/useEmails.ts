@@ -61,7 +61,7 @@ export function useEmails() {
   function handleSearch(query: string) {
     searchQuery.value = query
     page.value = 1
-    // watch(page) will trigger loadEmails
+    // watch([page, searchQuery]) will trigger loadEmails
   }
 
   async function handleDelete(id: number) {
@@ -83,9 +83,9 @@ export function useEmails() {
     }
   }
 
-  // Load emails on mount and on page change
+  // Load emails on mount, page change, or search query change
   onMounted(loadEmails)
-  watch(page, loadEmails)
+  watch([page, searchQuery], loadEmails)
 
   // Load detail when route param changes
   watch(
