@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { token } from './store'
+import AppLayout from './layouts/AppLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -10,9 +11,37 @@ const router = createRouter({
       component: () => import('./views/LoginView.vue'),
     },
     {
-      path: '/inbox/:id?',
-      name: 'inbox',
-      component: () => import('./views/InboxView.vue'),
+      path: '',
+      component: AppLayout,
+      children: [
+        {
+          path: '/inbox/:id?',
+          name: 'inbox',
+          component: () => import('./views/InboxView.vue'),
+        },
+        {
+          path: '/settings',
+          name: 'settings',
+          meta: { title: '设置' },
+          component: () => import('./views/TodoView.vue'),
+        },
+        {
+          path: '/users',
+          name: 'users',
+          meta: { title: '用户管理' },
+          component: () => import('./views/TodoView.vue'),
+        },
+        {
+          path: '/accounts',
+          name: 'accounts',
+          meta: { title: '邮箱账号' },
+          component: () => import('./views/TodoView.vue'),
+        },
+        {
+          path: '',
+          redirect: '/inbox',
+        },
+      ],
     },
     {
       path: '/:pathMatch(.*)*',

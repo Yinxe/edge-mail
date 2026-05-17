@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, shallowRef, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useMessage, NModal, NCheckbox } from 'naive-ui'
-import { useAuth } from '../composables/useAuth'
 import { useEmails } from '../composables/useEmails'
+import { fetchEmailDetail } from '../api'
+import type { EmailDetail as EmailDetailType } from '../store'
 import EmailSidebar from '../components/EmailSidebar.vue'
 import EmailDetail from '../components/EmailDetail.vue'
+import EmailDrawer from '../components/EmailDrawer.vue'
 
+const route = useRoute()
+const router = useRouter()
 const message = useMessage()
-const { logout } = useAuth()
+
 const {
   emails,
   currentEmail,
@@ -26,19 +31,69 @@ const pendingDeleteId = ref<number | null>(null)
 const showDeleteModal = ref(false)
 const dontAskAgain = ref(false)
 
-function handleLogout() {
-  logout()
-  message.success('已退出登录')
+/* ── Drawer state (mobile) ── */
+const drawerVisible = ref(false)
+const drawerEmail = shallowRef<EmailDetailType | null>(null)
+const drawerLoading = ref(false)
+
+const isMobile = () => window.innerWidth < 1024
+
+async function openDrawer(id: number) {
+  drawerVisible.value = true
+  drawerLoading.value = true
+  try {
+    const detail = await fetchEmailDetail(id)
+    drawerEmail.value = detail
+
+    // Optimistic read marking
+    const idx = emails.value.findIndex((e) => e.id === id)
+    if (idx !== -1 && !emails.value[idx].is_read) {
+      const updated = [...emails.value]
+      updated[idx] = { ...updated[idx], is_read: 1 }
+      emails.value = updated
+    }
+  } catch {
+    message.error('加载邮件详情失败')
+  } finally {
+    drawerLoading.value = false
+  }
 }
 
-function onSearchInput(value: string) {
-  handleSearch(value)
+function closeDrawer() {
+  drawerVisible.value = false
+  drawerEmail.value = null
+  // If on /inbox/:id via direct link, go back to list
+  if (isMobile() && route.params.id) {
+    router.push('/inbox')
+  }
 }
 
-function onClearSearch() {
-  handleSearch('')
+/* ── Email selection: mobile → bottom drawer, desktop → inline content ── */
+function handleEmailSelect(id: number) {
+  if (isMobile()) {
+    openDrawer(id)
+  } else {
+    selectEmail(id)
+  }
 }
 
+/* ── Handle direct nav to /inbox/:id on mobile ── */
+watch(
+  () => route.params.id,
+  (id) => {
+    if (id && typeof id === 'string' && isMobile()) {
+      openDrawer(parseInt(id))
+    }
+  },
+  { immediate: true },
+)
+
+async function deleteFromDrawer(id: number) {
+  closeDrawer()
+  await handleDelete(id)
+}
+
+/* ── Delete confirmation ── */
 function requestDelete(id: number) {
   if (localStorage.getItem('deleteConfirmDisabled')) {
     handleDelete(id)
@@ -62,74 +117,40 @@ function confirmDelete() {
 </script>
 
 <template>
-  <div class="inbox">
-    <!-- Header -->
-    <header class="inbox__header">
-      <div class="inbox__brand">
-        <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
-          <rect width="40" height="40" rx="10" fill="#E85D75" />
-          <path d="M10 14h20v14a2 2 0 01-2 2H12a2 2 0 01-2-2V14z" fill="white" opacity="0.9" />
-          <path d="M10 14l10 8 10-8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />
-        </svg>
-        <h1 class="inbox__title">EdgeMail</h1>
-        <span class="inbox__subtitle">Powered by Cloudflare</span>
-      </div>
+  <div class="inbox-layout">
+    <!-- Email list (left on desktop, full on mobile) -->
+    <div class="inbox__list">
+      <EmailSidebar
+        :emails="emails"
+        :current-id="currentEmail?.id ?? null"
+        :page="page"
+        :total="total"
+        :limit="limit"
+        :search-query="searchQuery"
+        @select="handleEmailSelect"
+        @delete="requestDelete"
+        @update:page="handlePageChange"
+        @update:search-query="handleSearch"
+      />
+    </div>
 
-      <!-- Search bar -->
-      <div class="inbox__search">
-        <svg class="inbox__search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          class="inbox__search-input"
-          type="text"
-          placeholder="搜索发件人或主题…"
-          :value="searchQuery"
-          @input="onSearchInput(($event.target as HTMLInputElement).value)"
-        />
-        <button
-          v-if="searchQuery"
-          class="inbox__search-clear"
-          @click="onClearSearch"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
-
-      <button class="inbox__logout" @click="handleLogout">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-          <polyline points="16 17 21 12 16 7" />
-          <line x1="21" y1="12" x2="9" y2="12" />
-        </svg>
-        <span>退出</span>
-      </button>
-    </header>
-
-    <!-- Main content -->
-    <div class="inbox__main">
-      <div class="inbox__sidebar">
-        <EmailSidebar
-          :emails="emails"
-          :current-id="currentEmail?.id ?? null"
-          :page="page"
-          :total="total"
-          :limit="limit"
-          @select="selectEmail"
-          @delete="requestDelete"
-          @update:page="handlePageChange"
-        />
-      </div>
+    <!-- Content area (right on desktop, hidden on mobile) -->
+    <div class="inbox__content">
       <EmailDetail
         :email="currentEmail"
         :loading="detailLoading"
         @delete="requestDelete"
       />
     </div>
+
+    <!-- Mobile bottom sheet drawer -->
+    <EmailDrawer
+      :email="drawerEmail"
+      :loading="drawerLoading"
+      :visible="drawerVisible"
+      @close="closeDrawer"
+      @delete="deleteFromDrawer"
+    />
 
     <!-- Delete confirmation modal -->
     <NModal v-model:show="showDeleteModal" preset="dialog" title="确认删除" positive-text="删除" negative-text="取消" @positive-click="confirmDelete" @negative-click="showDeleteModal = false">
@@ -140,125 +161,44 @@ function confirmDelete() {
 </template>
 
 <style scoped>
-.inbox {
-  height: 100dvh;
+.inbox-layout {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
   background: #F8F6F7;
 }
 
-/* ── Header ── */
-.inbox__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 56px;
-  padding: 0 20px;
-  background: #FFFFFF;
-  border-bottom: 1px solid #EAE5E8;
+/* ── List area (left on desktop) ── */
+.inbox__list {
+  width: 380px;
   flex-shrink: 0;
-}
-
-.inbox__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.inbox__title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #2D2327;
-  margin: 0;
-}
-
-.inbox__subtitle {
-  font-size: 12px;
-  color: #9E9196;
-  font-weight: 400;
-}
-
-.inbox__logout {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: none;
-  background: transparent;
-  color: #6B5E63;
-  font-size: 14px;
-  font-family: inherit;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 150ms ease-out;
-}
-.inbox__logout:hover {
-  background: #FFF5F6;
-  color: #E85D75;
-}
-
-/* ── Main area ── */
-.inbox__main {
-  display: flex;
-  flex: 1;
+  border-right: 1px solid #EAE5E8;
   overflow: hidden;
 }
 
-.inbox__sidebar {
-  width: 340px;
-  flex-shrink: 0;
+/* ── Content area (right on desktop) ── */
+.inbox__content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-/* ── Search ── */
-.inbox__search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  max-width: 360px;
-  margin: 0 16px;
-  padding: 6px 12px;
-  background: #F8F6F7;
-  border: 1px solid #EAE5E8;
-  border-radius: 10px;
-  transition: border-color 200ms ease-out;
+/* ── Mobile (< 1024px): list full width, content hidden, drawer handles detail ── */
+@media (max-width: 1023px) {
+  .inbox__list {
+    width: 100%;
+    border-right: none;
+  }
+
+  .inbox__content {
+    display: none !important;
+  }
 }
-.inbox__search:focus-within {
-  border-color: #E85D75;
-  background: #FFFFFF;
-}
-.inbox__search-icon {
-  flex-shrink: 0;
-  color: #9E9196;
-}
-.inbox__search-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 14px;
-  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Noto Sans SC',
-    'PingFang SC', 'Microsoft YaHei', sans-serif;
-  color: #2D2327;
-  outline: none;
-  min-width: 0;
-}
-.inbox__search-input::placeholder {
-  color: #9E9196;
-}
-.inbox__search-clear {
-  display: flex;
-  align-items: center;
-  padding: 2px;
-  border: none;
-  background: transparent;
-  color: #9E9196;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: color 150ms ease-out;
-}
-.inbox__search-clear:hover {
-  color: #E85D75;
-}
+
+/* ── Modal text ── */
 .inbox__delete-msg {
   margin: 0 0 12px 0;
   font-size: 14px;

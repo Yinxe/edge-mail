@@ -2,6 +2,7 @@ import { shallowRef, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { fetchEmails, fetchEmailDetail, toggleEmailRead, deleteEmail } from '../api'
+import { debounce } from '../utils/debounce'
 import type { EmailMeta, EmailDetail } from '../store'
 
 export function useEmails() {
@@ -36,7 +37,6 @@ export function useEmails() {
     try {
       const email = await fetchEmailDetail(id)
       currentEmail.value = email
-      // Mark as read in the sidebar list optimistically
       const idx = emails.value.findIndex((e) => e.id === id)
       if (idx !== -1 && !emails.value[idx].is_read) {
         const updated = [...emails.value]
@@ -56,24 +56,27 @@ export function useEmails() {
 
   function handlePageChange(newPage: number) {
     page.value = newPage
+    loadEmails()
   }
 
   function handleSearch(query: string) {
     searchQuery.value = query
+  }
+
+  function clearSearch() {
+    searchQuery.value = ''
     page.value = 1
-    // watch([page, searchQuery]) will trigger loadEmails
+    loadEmails()
   }
 
   async function handleDelete(id: number) {
     try {
       await deleteEmail(id)
       message.success('邮件已删除')
-      // Clear detail view if the deleted email was being viewed
       if (currentEmail.value?.id === id) {
         currentEmail.value = null
         router.replace('/inbox')
       }
-      // Reload — if the page becomes empty, step back
       await loadEmails()
       if (emails.value.length === 0 && page.value > 1) {
         page.value--
@@ -83,9 +86,13 @@ export function useEmails() {
     }
   }
 
-  // Load emails on mount, page change, or search query change
   onMounted(loadEmails)
-  watch([page, searchQuery], loadEmails)
+
+  // Debounced search
+  watch(searchQuery, debounce(() => {
+    page.value = 1
+    loadEmails()
+  }, 300))
 
   // Load detail when route param changes
   watch(
@@ -112,6 +119,7 @@ export function useEmails() {
     selectEmail,
     handlePageChange,
     handleSearch,
+    clearSearch,
     handleDelete,
   }
 }
