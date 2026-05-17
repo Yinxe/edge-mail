@@ -6,7 +6,8 @@
     {
       "binding": "DB",
       "database_name": "edge-mail-db",
-      "database_id": "GITHUB ACTION AUTO INJECT vars.D1_DATABASE_ID"
+      "database_id": "GITHUB ACTION AUTO INJECT vars.D1_DATABASE_ID",
+      "migrations_dir": "migrations"
     }
   ]
 }
