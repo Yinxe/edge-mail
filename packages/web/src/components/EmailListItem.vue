@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { NTag, NEllipsis, NText } from 'naive-ui'
+import { NTag, NEllipsis, NText, NButton } from 'naive-ui'
 import type { EmailMeta } from '../store'
 
 const props = defineProps<{
@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   select: [id: number]
+  delete: [id: number]
 }>()
 
 const timeLabel = computed(() => {
@@ -49,6 +50,21 @@ const timeLabel = computed(() => {
         >
           {{ email.subject }}
         </NEllipsis>
+        <div class="email-item__actions">
+          <NButton
+            text
+            size="tiny"
+            class="email-item__delete"
+            @click.stop="emit('delete', email.id)"
+          >
+            <template #icon>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
+            </template>
+          </NButton>
+        </div>
         <NTag v-if="!email.is_read" type="info" size="tiny" :bordered="false" class="email-item__tag">
           新
         </NTag>
@@ -138,5 +154,22 @@ const timeLabel = computed(() => {
 
 .email-item__tag {
   flex-shrink: 0;
+}
+
+.email-item__actions {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+}
+.email-item:hover .email-item__actions {
+  display: flex;
+}
+.email-item__delete {
+  color: #E55959;
+  opacity: 0.6;
+  transition: opacity 150ms ease-out;
+}
+.email-item__delete:hover {
+  opacity: 1;
 }
 </style>

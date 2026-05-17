@@ -13,6 +13,7 @@ defineProps<{
 
 const emit = defineEmits<{
   select: [id: number]
+  delete: [id: number]
   'update:page': [page: number]
 }>()
 </script>
@@ -33,6 +34,7 @@ const emit = defineEmits<{
         :email="email"
         :is-selected="currentId === email.id"
         @select="emit('select', $event)"
+        @delete="emit('delete', $event)"
       />
     </div>
 
