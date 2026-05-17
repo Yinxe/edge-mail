@@ -66,10 +66,14 @@ function formatFullDate(dateStr: string): string {
           <h2 class="detail__subject">{{ email.subject }}</h2>
         </div>
 
-        <!-- Meta: label-value rows with copy -->
+        <!-- Meta: tag-value rows with copy -->
         <div class="detail__meta">
           <div class="detail__meta-row">
-            <span class="detail__label">发件人</span>
+            <NTag size="tiny" :bordered="false" type="default">ID</NTag>
+            <span class="detail__value">{{ email.message_id }}</span>
+          </div>
+          <div class="detail__meta-row">
+            <NTag size="tiny" :bordered="false" type="info">FROM</NTag>
             <button
               class="detail__value detail__value--copyable"
               @click="copy(email.sender, '发件人地址')"
@@ -87,7 +91,7 @@ function formatFullDate(dateStr: string): string {
             </button>
           </div>
           <div class="detail__meta-row">
-            <span class="detail__label">收件人</span>
+            <NTag size="tiny" :bordered="false" type="warning">TO</NTag>
             <button
               class="detail__value detail__value--copyable"
               @click="copy(email.recipient, '收件人地址')"
@@ -105,7 +109,7 @@ function formatFullDate(dateStr: string): string {
             </button>
           </div>
           <div class="detail__meta-row">
-            <span class="detail__label">时间</span>
+            <NTag size="tiny" :bordered="false" type="default">Time</NTag>
             <span class="detail__value">
               <svg class="detail__time-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10" />
@@ -291,7 +295,7 @@ function formatFullDate(dateStr: string): string {
   overflow-wrap: break-word;
 }
 
-/* ── Meta: label-value rows ── */
+/* ── Meta: tag-value rows ── */
 .detail__meta {
   display: flex;
   flex-direction: column;
@@ -302,39 +306,32 @@ function formatFullDate(dateStr: string): string {
 .detail__meta-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 36px;
-}
-
-.detail__label {
-  flex-shrink: 0;
-  width: 52px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #9E9196;
-  letter-spacing: 0.03em;
+  gap: 8px;
+  min-height: 32px;
 }
 
 .detail__value {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
+  font-size: 13px;
   color: #2D2327;
   font-weight: 500;
   background: #F8F6F7;
-  padding: 5px 12px;
-  border-radius: 8px;
+  padding: 4px 10px;
+  border-radius: 6px;
   min-width: 0;
   max-width: 100%;
   border: 1px solid transparent;
   transition: all 150ms ease-out;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .detail__value--copyable {
   cursor: pointer;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   text-align: left;
   border-color: #EAE5E8;
 }
@@ -480,10 +477,6 @@ function formatFullDate(dateStr: string): string {
     flex-wrap: wrap;
     gap: 6px;
     min-height: auto;
-  }
-
-  .detail__label {
-    width: auto;
   }
 
   .detail__value {
