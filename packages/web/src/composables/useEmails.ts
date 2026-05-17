@@ -17,12 +17,12 @@ export function useEmails() {
   const loading = shallowRef(false)
   const detailLoading = shallowRef(false)
   const searchQuery = ref('')
-  const limit = 20
+  const limit = ref(20)
 
   async function loadEmails() {
     loading.value = true
     try {
-      const result = await fetchEmails(page.value, searchQuery.value || undefined)
+      const result = await fetchEmails(page.value, limit.value, searchQuery.value || undefined)
       emails.value = result.items
       total.value = result.total
     } catch {
@@ -69,6 +69,10 @@ export function useEmails() {
     loadEmails()
   }
 
+  async function refresh() {
+    await loadEmails()
+  }
+
   async function handleDelete(id: number) {
     try {
       await deleteEmail(id)
@@ -84,6 +88,34 @@ export function useEmails() {
     } catch {
       message.error('删除失败')
     }
+  }
+
+  async function handleBatchDelete(ids: number[], onProgress?: (current: number, total: number) => void): Promise<void> {
+    for (let i = 0; i < ids.length; i++) {
+      try {
+        await deleteEmail(ids[i])
+      } catch {
+        // continue with next
+      }
+      onProgress?.(i + 1, ids.length)
+    }
+    // If current detail email was deleted, navigate away
+    if (currentEmail.value && ids.includes(currentEmail.value.id)) {
+      currentEmail.value = null
+      router.replace('/inbox')
+    }
+    await loadEmails()
+    if (emails.value.length === 0 && page.value > 1) {
+      page.value--
+      // reload after page decrement
+      await loadEmails()
+    }
+  }
+
+  function handleLimitChange(newLimit: number) {
+    limit.value = newLimit
+    page.value = 1
+    loadEmails()
   }
 
   onMounted(loadEmails)
@@ -121,5 +153,8 @@ export function useEmails() {
     handleSearch,
     clearSearch,
     handleDelete,
+    handleBatchDelete,
+    handleLimitChange,
+    refresh,
   }
 }

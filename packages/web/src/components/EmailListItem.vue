@@ -3,8 +3,8 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { NTag, NEllipsis, NText } from 'naive-ui'
 import type { EmailMeta } from '../store'
 
-const props = defineProps<{ email: EmailMeta; isSelected: boolean }>()
-const emit = defineEmits<{ select: [id: number]; delete: [id: number] }>()
+const props = defineProps<{ email: EmailMeta; isSelected: boolean; showCheckbox?: boolean; checked?: boolean }>()
+const emit = defineEmits<{ select: [id: number]; delete: [id: number]; check: [id: number] }>()
 
 /* ── Swipe to delete ── */
 const SWIPE_THRESHOLD = 40
@@ -61,7 +61,11 @@ function closeSwipe() { offset.value = 0; isOpen.value = false }
 function handleItemClick() {
   if (suppressClick) { suppressClick = false; return }
   if (isOpen.value) { closeSwipe(); return }
-  emit('select', props.email.id)
+  if (props.showCheckbox) {
+    emit('check', props.email.id)
+  } else {
+    emit('select', props.email.id)
+  }
 }
 
 /* ── Context menu ── */
@@ -128,7 +132,14 @@ onUnmounted(() => window.removeEventListener('click', onWindowClick))
       :style="{ transform: `translateX(${offset}px)` }"
       @click="handleItemClick"
     >
-      <div v-if="!email.is_read" class="email-item__indicator" />
+      <div v-if="showCheckbox" class="email-item__checkbox" @click.stop="emit('check', email.id)">
+        <div :class="['email-item__checkbox-box', { 'email-item__checkbox-box--checked': checked }]">
+          <svg v-if="checked" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+      </div>
+      <div v-if="!email.is_read && !showCheckbox" class="email-item__indicator" />
       <div class="email-item__body">
         <div class="email-item__header">
           <NEllipsis class="email-item__sender" :class="{ 'email-item__sender--unread': !email.is_read }">{{ email.sender }}</NEllipsis>
@@ -207,6 +218,10 @@ onUnmounted(() => window.removeEventListener('click', onWindowClick))
 .email-item--selected { background-color: #FDE8EB; }
 .email-item--selected:hover { background-color: #FDE8EB; }
 
+.email-item__checkbox { display: flex; align-items: center; flex-shrink: 0; margin-right: 10px; cursor: pointer; }
+.email-item__checkbox-box { width: 18px; height: 18px; border: 2px solid #9E9196; border-radius: 4px; display: flex; align-items: center; justify-content: center; transition: all 150ms ease-out; color: #FFFFFF; }
+.email-item__checkbox-box--checked { background: #E85D75; border-color: #E85D75; }
+.email-item__checkbox:hover .email-item__checkbox-box { border-color: #E85D75; }
 .email-item__indicator { width: 3px; flex-shrink: 0; background: #4A9FE5; border-radius: 0 2px 2px 0; margin: -12px 10px -12px -16px; }
 .email-item__body { flex: 1; min-width: 0; }
 .email-item__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

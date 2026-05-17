@@ -20,8 +20,8 @@ export async function login(password: string): Promise<{ token: string; expiresA
   return res.json()
 }
 
-export async function fetchEmails(page: number, q?: string): Promise<ListResult<EmailMeta>> {
-  const params = new URLSearchParams({ page: String(page), limit: '20' })
+export async function fetchEmails(page: number, limit: number = 20, q?: string): Promise<ListResult<EmailMeta>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) })
   if (q) params.set('q', q)
   const res = await fetch(`${BASE}/api/emails?${params}`, {
     headers: authHeaders(),

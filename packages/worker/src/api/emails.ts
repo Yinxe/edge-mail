@@ -13,7 +13,7 @@ function parseId(c: C, param: string = 'id'): number | null {
 
 export async function handleListEmails(c: C): Promise<Response> {
   const page = Math.max(1, parseInt(c.req.query('page') ?? '1'));
-  const limit = Math.min(50, Math.max(1, parseInt(c.req.query('limit') ?? '20')));
+  const limit = Math.min(100, Math.max(1, parseInt(c.req.query('limit') ?? '20')));
   const q = c.req.query('q') ?? '';
 
   const result = q

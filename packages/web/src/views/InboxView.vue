@@ -21,6 +21,9 @@ const {
   handlePageChange,
   handleSearch,
   handleDelete,
+  handleBatchDelete,
+  handleLimitChange,
+  refresh,
 } = useEmails()
 
 const pendingDeleteId = ref<number | null>(null)
@@ -74,10 +77,13 @@ function confirmDelete() {
         :total="total"
         :limit="limit"
         :search-query="searchQuery"
+        :on-refresh="refresh"
+        :on-batch-delete="handleBatchDelete"
         @select="handleEmailSelect"
         @delete="requestDelete"
         @update:page="handlePageChange"
         @update:search-query="handleSearch"
+        @update:limit="handleLimitChange"
       />
     </div>
 
