@@ -70,6 +70,10 @@ function formatFullDate(dateStr: string): string {
         <div class="detail__meta">
           <div class="detail__meta-pill">
             <span class="detail__pill-label detail__pill-label--default">ID</span>
+            <span class="detail__pill-value">{{ email.id }}</span>
+          </div>
+          <div class="detail__meta-pill">
+            <span class="detail__pill-label detail__pill-label--default">MSG_ID</span>
             <span class="detail__pill-value">{{ email.message_id }}</span>
           </div>
           <button
