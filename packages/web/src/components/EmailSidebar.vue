@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { NList, NListItem, NPagination, NTag, NText, NEllipsis } from 'naive-ui'
+import { NPagination, NText } from 'naive-ui'
 import type { EmailMeta } from '../store'
+import EmailListItem from './EmailListItem.vue'
 
 defineProps<{
   emails: EmailMeta[]
@@ -14,64 +15,77 @@ const emit = defineEmits<{
   select: [id: number]
   'update:page': [page: number]
 }>()
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + 'Z')
-  const now = new Date()
-  const isToday = d.toDateString() === now.toDateString()
-  if (isToday) {
-    return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-  }
-  return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
-}
 </script>
 
 <template>
-  <div class="flex flex-col h-full border-r border-gray-200">
-    <div class="p-3 border-b border-gray-200">
-      <NText strong>收件箱</NText>
-      <NText depth="3" class="ml-2">({{ total }})</NText>
+  <aside class="sidebar">
+    <!-- Header -->
+    <div class="sidebar__header">
+      <NText strong class="sidebar__title">收件箱</NText>
+      <NText depth="3" class="sidebar__count">({{ total }})</NText>
     </div>
 
-    <div class="flex-1 overflow-y-auto">
-      <NList :show-divider="false" class="cursor-pointer">
-        <NListItem
-          v-for="email in emails"
-          :key="email.id"
-          :class="[
-            'px-4 py-3 hover:bg-gray-50 transition-colors',
-            currentId === email.id ? 'bg-blue-50' : '',
-            !email.is_read ? 'font-semibold' : '',
-          ]"
-          @click="emit('select', email.id)"
-        >
-          <div class="w-full min-w-0">
-            <div class="flex items-center justify-between gap-2">
-              <NEllipsis class="text-sm">{{ email.sender }}</NEllipsis>
-              <NText depth="3" class="text-xs whitespace-nowrap flex-shrink-0">
-                {{ formatDate(email.created_at) }}
-              </NText>
-            </div>
-            <div class="flex items-center gap-1 mt-1">
-              <NEllipsis class="text-xs" :class="!email.is_read ? 'text-gray-900' : 'text-gray-500'">
-                {{ email.subject }}
-              </NEllipsis>
-              <NTag v-if="!email.is_read" type="info" size="tiny" :bordered="false">
-                新
-              </NTag>
-            </div>
-          </div>
-        </NListItem>
-      </NList>
+    <!-- Email list -->
+    <div class="sidebar__list">
+      <EmailListItem
+        v-for="email in emails"
+        :key="email.id"
+        :email="email"
+        :is-selected="currentId === email.id"
+        @select="emit('select', $event)"
+      />
     </div>
 
-    <div class="p-3 border-t border-gray-200 flex justify-center">
+    <!-- Pagination -->
+    <div class="sidebar__pagination">
       <NPagination
         :page="page"
         :page-count="Math.ceil(total / limit) || 1"
         :page-size="limit"
+        size="small"
         @update:page="emit('update:page', $event)"
       />
     </div>
-  </div>
+  </aside>
 </template>
+
+<style scoped>
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #FFFFFF;
+  border-right: 1px solid #EAE5E8;
+}
+
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #EAE5E8;
+  flex-shrink: 0;
+}
+
+.sidebar__title {
+  font-size: 16px;
+  color: #2D2327;
+}
+
+.sidebar__count {
+  font-size: 13px;
+}
+
+.sidebar__list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sidebar__pagination {
+  display: flex;
+  justify-content: center;
+  padding: 10px 16px;
+  border-top: 1px solid #EAE5E8;
+  flex-shrink: 0;
+}
+</style>

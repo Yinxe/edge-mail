@@ -1,90 +1,55 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { NButton, useMessage } from 'naive-ui'
-import { fetchEmails, fetchEmailDetail } from '../api'
-import { token, emails, currentEmail } from '../store'
+import { useMessage } from 'naive-ui'
+import { useAuth } from '../composables/useAuth'
+import { useEmails } from '../composables/useEmails'
 import EmailSidebar from '../components/EmailSidebar.vue'
 import EmailDetail from '../components/EmailDetail.vue'
-import type { EmailDetail as EmailDetailType } from '../store'
 
-const route = useRoute()
-const router = useRouter()
 const message = useMessage()
+const { logout } = useAuth()
+const {
+  emails,
+  currentEmail,
+  page,
+  total,
+  limit,
+  loading: detailLoading,
+  selectEmail,
+  handlePageChange,
+} = useEmails()
 
-const page = ref(1)
-const total = ref(0)
-const limit = 20
-
-async function loadEmails() {
-  try {
-    const result = await fetchEmails(page.value)
-    emails.value = result.items
-    total.value = result.total
-  } catch {
-    message.error('加载邮件失败')
-  }
+function handleLogout() {
+  logout()
+  message.success('已退出登录')
 }
-
-async function selectEmail(id: number) {
-  router.push(`/inbox/${id}`)
-}
-
-async function loadDetail(id: number) {
-  try {
-    const email = await fetchEmailDetail(id)
-    currentEmail.value = email
-    // Update is_read in sidebar list
-    const idx = emails.value.findIndex((e) => e.id === id)
-    if (idx !== -1) {
-      emails.value[idx] = { ...emails.value[idx], is_read: 1 }
-    }
-  } catch {
-    message.error('加载邮件详情失败')
-  }
-}
-
-function onPageChange(newPage: number) {
-  page.value = newPage
-}
-
-function logout() {
-  token.value = ''
-  currentEmail.value = null
-  emails.value = []
-  router.push('/login')
-}
-
-onMounted(() => {
-  loadEmails()
-})
-
-watch(page, () => {
-  loadEmails()
-})
-
-watch(
-  () => route.params.id,
-  (id) => {
-    if (id && typeof id === 'string') {
-      loadDetail(parseInt(id))
-    } else {
-      currentEmail.value = null
-    }
-  },
-  { immediate: true },
-)
 </script>
 
 <template>
-  <div class="h-screen flex flex-col">
-    <header class="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
-      <h1 class="text-lg font-bold">Edge Mail</h1>
-      <NButton size="small" text @click="logout">退出</NButton>
+  <div class="inbox">
+    <!-- Header -->
+    <header class="inbox__header">
+      <div class="inbox__brand">
+        <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+          <rect width="40" height="40" rx="10" fill="#E85D75" />
+          <path d="M10 14h20v14a2 2 0 01-2 2H12a2 2 0 01-2-2V14z" fill="white" opacity="0.9" />
+          <path d="M10 14l10 8 10-8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />
+        </svg>
+        <h1 class="inbox__title">EdgeMail</h1>
+        <span class="inbox__subtitle">Powered by Cloudflare</span>
+      </div>
+      <button class="inbox__logout" @click="handleLogout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+        <span>退出</span>
+      </button>
     </header>
 
-    <div class="flex flex-1 overflow-hidden">
-      <div class="w-80 flex-shrink-0">
+    <!-- Main content -->
+    <div class="inbox__main">
+      <div class="inbox__sidebar">
         <EmailSidebar
           :emails="emails"
           :current-id="currentEmail?.id ?? null"
@@ -92,11 +57,81 @@ watch(
           :total="total"
           :limit="limit"
           @select="selectEmail"
-          @update:page="onPageChange"
+          @update:page="handlePageChange"
         />
       </div>
-
-      <EmailDetail :email="currentEmail" />
+      <EmailDetail :email="currentEmail" :loading="detailLoading" />
     </div>
   </div>
 </template>
+
+<style scoped>
+.inbox {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #F8F6F7;
+}
+
+/* ── Header ── */
+.inbox__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 20px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #EAE5E8;
+  flex-shrink: 0;
+}
+
+.inbox__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inbox__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2D2327;
+  margin: 0;
+}
+
+.inbox__subtitle {
+  font-size: 12px;
+  color: #9E9196;
+  font-weight: 400;
+}
+
+.inbox__logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: #6B5E63;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 150ms ease-out;
+}
+.inbox__logout:hover {
+  background: #FFF5F6;
+  color: #E85D75;
+}
+
+/* ── Main area ── */
+.inbox__main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.inbox__sidebar {
+  width: 340px;
+  flex-shrink: 0;
+}
+</style>

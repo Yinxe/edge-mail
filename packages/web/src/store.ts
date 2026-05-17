@@ -1,5 +1,4 @@
-import { ref, watch } from 'vue'
-
+/* ── Type definitions only ── */
 export interface EmailMeta {
   id: number
   message_id: string
@@ -24,6 +23,9 @@ export interface ListResult<T> {
   limit: number
 }
 
+/* ── Shared token ref (imported by router guard, updated by useAuth) ── */
+import { ref, watch } from 'vue'
+
 export const token = ref<string>(localStorage.getItem('token') || '')
 
 watch(token, (val) => {
@@ -33,6 +35,3 @@ watch(token, (val) => {
     localStorage.removeItem('token')
   }
 })
-
-export const emails = ref<EmailMeta[]>([])
-export const currentEmail = ref<EmailDetail | null>(null)
