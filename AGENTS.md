@@ -20,8 +20,16 @@ Vue 3 Composition API + Naive UI + TailwindCSS v4。Vite 代理 `/api` 到 Worke
 
 ---
 
-# 开发规范
-- 采用 **规格驱动开发 SDD** + **测试驱动开发 TDD** 
-- 待实现或未来目标可以直接在代码中写 `TODO`
+## 规则文件指引
 
-> 详细规则按领域拆分在 `.opencode/rules/` 下，通过 `opencode.jsonc` 的 `instructions` 自动加载。
+| 场景 | 应该先读 |
+|------|----------|
+| 项目架构 / 目录结构 | `docs/rules/architecture.md` |
+| 本地开发 / 启动流程 | `docs/rules/local-dev.md` |
+| 写测试 / 跑测试 | `docs/rules/testing.md` |
+| CI 部署 / 发布流程 | `docs/rules/ci-cd.md` |
+| 建表 / 改表 / D1 迁移 | `docs/rules/sql-migrations.md` |
+| 开发流程（SDD+TDD/TODO 规范） | `docs/rules/development-practices.md` |
+| UI 设计规范 | `DESIGN.md`（根目录） |
+
+> 以上规则文件通过 `opencode.jsonc` 的 `instructions` 自动加载到 AI system prompt。
