@@ -17,6 +17,7 @@
 
 ### 变更
 
+- 后端框架从原生 `ExportedHandler` 迁移至 Hono
 - Prettier 格式化所有源代码文件
 - 修复 `App.vue` 中属性顺序的 ESLint 警告
 
@@ -30,5 +31,3 @@
 - Tailwind CSS v4 集成，替换默认 scaffold 组件为 Tailwind 样式
 - 基础路由：首页（`/`）和关于页（`/about`）
 
-[Unreleased]: https://github.com/your-org/edge-mail/compare/v0.0.0...HEAD
-[0.0.0]: https://github.com/your-org/edge-mail/releases/tag/v0.0.0

@@ -3,10 +3,10 @@
 ## 项目结构
 
 ```
-server/index.ts      Cloudflare Worker 入口（后端 API，处理 /api/*）
+server/index.ts      Hono 框架后端 Worker 入口（处理 /api/*）
 src/                 Vue 3 SPA 前端（Vite + Tailwind CSS v4）
 wrangler.jsonc        Worker 配置：main=server/index.ts, SPA 静态资源, nodejs_compat
-vite.config.ts        Vite 配置：tailwindcss, vue, vue-devtools, cloudflare 插件
+vite.config.ts        Vite 配置：tailwindcss, vue, vue-devtools, cloudflare 插件（自动管理 SPA 静态资源路径）
 tsconfig.json         引用 3 个子项目（app, worker, node）
 ```
 
@@ -19,17 +19,17 @@ tsconfig.json         引用 3 个子项目（app, worker, node）
 | `npm run preview`    | 构建后通过 `wrangler dev` 本地预览生产环境               |
 | `npm run deploy`     | 构建 + `wrangler deploy` 部署到 Cloudflare               |
 | `npm run type-check` | `vue-tsc --build` — 检查 app 和 worker 的 tsconfig       |
-| `npm run cf-typegen` | 根据 wrangler 配置重新生成 `worker-configuration.d.ts` |
-| `npm run lint` | ESLint 检查代码质量 |
-| `npm run lint:fix` | ESLint 检查并自动修复 |
-| `npm run format` | Prettier 检查代码格式 |
-| `npm run format:fix` | Prettier 自动格式化所有文件 |
+| `npm run cf-typegen` | 根据 wrangler 配置重新生成 `worker-configuration.d.ts`   |
+| `npm run lint`       | ESLint 检查代码质量                                      |
+| `npm run lint:fix`   | ESLint 检查并自动修复                                    |
+| `npm run format`     | Prettier 检查代码格式                                    |
+| `npm run format:fix` | Prettier 自动格式化所有文件                              |
 
 > **维护提醒：** 增删或修改命令时，同步更新 `docs/SCRIPT.md`，保持两者一致。每个值得记录的版本变更（功能增删、配置变更、依赖更新等）需写入 `docs/CHANGELOG.md`。
 
 ## 架构说明
 
-- **Worker**（`server/index.ts`）通过 `ExportedHandler<Env>` 导出 `{ fetch }`。处理 `/api/*` 请求；其他路径由 SPA 静态资源处理。
+- **Worker**（`server/index.ts`）使用 **Hono** 框架构建 API 路由。`export default app` 导出的 Hono 实例实现了 `ExportedHandler` 接口；SPA 静态资源路径由 `@cloudflare/vite-plugin` 在构建时自动配置。
 - **Vue SPA**（`src/`）使用 Vue Router v5（`createWebHistory`），全量使用 Vue 3 `<script setup lang="ts">`。
 - **Tailwind CSS v4** — 使用 `@import "tailwindcss"` 语法（非旧版 `@tailwind` 指令）。无需 `tailwind.config.*` 文件，通过 CSS 配置。
 - **路径别名**：`@/` 映射到 `src/`（同时在 `vite.config.ts` 和 `tsconfig.app.json` 中配置）。
@@ -76,6 +76,7 @@ tsconfig.json         引用 3 个子项目（app, worker, node）
 - 前端组件测试优先测逻辑（Composables、工具函数），暂不要求 DOM 渲染测试
 
 ### 提交前检查清单
+
 - [ ] `npm run lint` 通过（无 error 和 warning）
 - [ ] `npm run format` 通过
 - [ ] `npm run type-check` 通过
